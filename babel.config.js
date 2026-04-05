@@ -1,12 +1,19 @@
 module.exports = function (api) {
   api.cache(true);
-  let plugins = [];
-
-  plugins.push('react-native-worklets/plugin');
 
   return {
-    presets: [['babel-preset-expo', { jsxImportSource: 'nativewind' }], 'nativewind/babel'],
-
-    plugins,
+    presets: [
+      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
+    ],
+    plugins: [
+      ['module-resolver', {
+        root: ['./src'],
+        alias: {
+          '@':        './src',
+          '@modules': './src/modules',
+          '@shared':  './src/shared',
+        },
+      }],
+    ],
   };
 };
