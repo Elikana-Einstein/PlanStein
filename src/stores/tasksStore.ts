@@ -6,14 +6,18 @@ interface TasksState {
   tasks:        Task[];
   isLoading:    boolean;
   error:        string | null;
+  openModal:    boolean;
   loadAllTasks: () => Promise<void>;
   toggleTask:   (id: string) => Promise<void>;
+  toggleModal:  () => void;
 }
+
 
 export const useTasksStore = create<TasksState>((set, get) => ({
   tasks:     [],
   isLoading: false,
   error:     null,
+  openModal:  false,
 
   loadAllTasks: async () => {
     set({ isLoading: true, error: null });
@@ -49,4 +53,8 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       });
     }
   },
+
+  toggleModal: () => {
+    set((state) => ({ openModal: !state.openModal }));
+  }
 }));

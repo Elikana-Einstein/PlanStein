@@ -14,6 +14,7 @@ module.exports = function (api) {
           '@shared':  './src/shared',
         },
       }],
+      'react-native-reanimated/plugin'
     ],
   };
 };

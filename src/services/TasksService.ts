@@ -2,7 +2,7 @@ import { Task } from '@/shared/types';
 import { db, mapRowToTask } from '@/db/database';
 
 export const TasksService = {
-
+  
   getAllTasks: async (): Promise<Task[]> => {
     const rows = await db.getAllAsync(`
       SELECT * FROM tasks ORDER BY
@@ -24,22 +24,11 @@ export const TasksService = {
     );
   },
 
-  seedMockTasks: async (): Promise<void> => {
-    const mockTasks: Task[] = [
-      { id: '1', title: 'Submit project proposal', tag: 'Work',     dueDate: 'Today',     completed: false, priority: 'urgent' },
-      { id: '2', title: 'Review Expo Router docs',  tag: 'Dev',      dueDate: 'Tomorrow',  completed: false, priority: 'high'   },
-      { id: '3', title: 'Set up Drizzle schema',    tag: 'Dev',      dueDate: 'This week', completed: false, priority: 'high'   },
-      { id: '4', title: 'Grocery run — Nakumatt',   tag: 'Personal', dueDate: 'Today',     completed: false, priority: 'medium' },
-      { id: '5', title: 'Morning standup notes',    tag: 'Work',     dueDate: 'Today',     completed: true,  priority: 'medium' },
-    ];
-    for (const task of mockTasks) {
-      await db.runAsync(
-        `INSERT OR REPLACE INTO tasks
-           (id, title, tag, due_date, completed, priority)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [task.id, task.title, task.tag, task.dueDate ?? null,
-         task.completed ? 1 : 0, task.priority]
-      );
-    }
-  },
+ addTask: async (id:string,title:string,tag:string,due_date:string):Promise<void> =>{
+  
+  await db.runAsync(
+    `INSERT INTO tasks (id,title,tag,due_date) VALUES (?,?,?,?)`,
+    [id,title,tag,due_date]
+  )
+ }
 };

@@ -10,7 +10,6 @@ import {
   TextInput, Modal,
 } from 'react-native';
 
-
 const C = Colors.dark;
 const S = Colors.spacing;
 const R = Colors.radius;
@@ -18,6 +17,8 @@ const R = Colors.radius;
 const PLAYLIST_COLORS = [
   C.primary, C.secondary, C.accent, C.success,
 ];
+
+// ─── LibraryTab ───────────────────────────────────────────────────────────────
 
 export const LibraryTab: React.FC = () => {
   const [playlists,        setPlaylists]        = useState<Playlist[]>([]);
@@ -32,7 +33,13 @@ export const LibraryTab: React.FC = () => {
   const [showAddSheet,     setShowAddSheet]     = useState(false);
   const [addingToPlaylist, setAddingToPlaylist] = useState<string | null>(null);
 
+  // ─── Expandable playlist state ─────────────────────────────────────────────
+  const [expandedId,      setExpandedId]      = useState<string | null>(null);
+  const [playlistTracks,  setPlaylistTracks]  = useState<Record<string, Track[]>>({});
+
   const { setTrack, setQueue, setPlaylist, currentTrack } = usePlayerStore();
+
+  // ─── Load ──────────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -71,7 +78,12 @@ export const LibraryTab: React.FC = () => {
     setQueue(allTracks);
   }, [allTracks]);
 
-  // Long press opens the "add to playlist" sheet
+  const handlePlaylistTrackPress = useCallback((track: Track, tracks: Track[], playlist: Playlist) => {
+    setPlaylist(playlist);
+    setQueue(tracks);
+    setTrack(track);
+  }, []);
+
   const handleTrackLongPress = useCallback((track: Track) => {
     setSelectedTrack(track);
     setShowAddSheet(true);
@@ -80,7 +92,6 @@ export const LibraryTab: React.FC = () => {
   const handleAddToPlaylist = useCallback(async (playlist: Playlist) => {
     if (!selectedTrack) return;
 
-    // Check if track already in playlist
     const alreadyIn = playlist.trackIds.includes(selectedTrack.id);
     if (alreadyIn) {
       Alert.alert('Already added', `"${selectedTrack.title}" is already in "${playlist.name}".`);
@@ -92,10 +103,8 @@ export const LibraryTab: React.FC = () => {
       await PlayerService.addTrackToPlaylist(
         playlist.id,
         selectedTrack.id,
-        playlist.trackIds.length, // append to end
+        playlist.trackIds.length,
       );
-
-      // Update local state so UI reflects immediately
       setPlaylists(prev =>
         prev.map(p =>
           p.id === playlist.id
@@ -103,7 +112,12 @@ export const LibraryTab: React.FC = () => {
             : p
         )
       );
-
+      // Invalidate cached tracks for this playlist so expand refreshes
+      setPlaylistTracks(prev => {
+        const next = { ...prev };
+        delete next[playlist.id];
+        return next;
+      });
       setShowAddSheet(false);
       setSelectedTrack(null);
     } finally {
@@ -121,23 +135,43 @@ export const LibraryTab: React.FC = () => {
     setShowNewPlaylist(false);
   }, [newName, playlists.length]);
 
-  const deletePlaylist = useCallback((id: string) => {
+  // Long press on playlist card → alert with view / delete options
+  const handlePlaylistLongPress = useCallback((id: string) => {
     Alert.alert(
-      'Delete playlist',
-      'This will remove the playlist but keep the tracks in your library.',
+      'Playlist options',
+      'What would you like to do?',
       [
         { text: 'Cancel', style: 'cancel' },
+        {
+          text:    'View contents',
+          onPress: async () => {
+            // Toggle collapse if already expanded
+            if (expandedId === id) {
+              setExpandedId(null);
+              return;
+            }
+            // Fetch tracks if not already cached
+            if (!playlistTracks[id]) {
+              const tracks = await PlayerService.getPlaylistTracks(id);
+              setPlaylistTracks(prev => ({ ...prev, [id]: tracks }));
+            }
+            setExpandedId(id);
+          },
+        },
         {
           text:    'Delete',
           style:   'destructive',
           onPress: async () => {
             await PlayerService.deletePlaylist(id);
             setPlaylists(prev => prev.filter(p => p.id !== id));
+            if (expandedId === id) setExpandedId(null);
           },
         },
       ]
     );
-  }, []);
+  }, [expandedId, playlistTracks]);
+
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <View style={styles.container}>
@@ -156,30 +190,23 @@ export const LibraryTab: React.FC = () => {
 
       {/* Section toggle */}
       <View style={styles.toggle}>
-        <TouchableOpacity
-          style={[styles.toggleBtn, activeSection === 'playlists' && styles.toggleActive]}
-          onPress={() => setActiveSection('playlists')}
-        >
-          <Text style={[styles.toggleText, activeSection === 'playlists' && styles.toggleTextActive]}>
-            Playlists
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleBtn, activeSection === 'tracks' && styles.toggleActive]}
-          onPress={() => setActiveSection('tracks')}
-        >
-          <Text style={[styles.toggleText, activeSection === 'tracks' && styles.toggleTextActive]}>
-            All tracks
-          </Text>
-        </TouchableOpacity>
+        {(['playlists', 'tracks'] as const).map(section => (
+          <TouchableOpacity
+            key={section}
+            style={[styles.toggleBtn, activeSection === section && styles.toggleActive]}
+            onPress={() => setActiveSection(section)}
+          >
+            <Text style={[styles.toggleText, activeSection === section && styles.toggleTextActive]}>
+              {section === 'playlists' ? 'Playlists' : 'All tracks'}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* Hint when on tracks tab */}
+      {/* Long-press hint for tracks section */}
       {activeSection === 'tracks' && allTracks.length > 0 && (
         <View style={styles.hint}>
-          <Text style={styles.hintText}>
-            Long press any track to add it to a playlist
-          </Text>
+          <Text style={styles.hintText}>Long press any track to add it to a playlist</Text>
         </View>
       )}
 
@@ -201,8 +228,14 @@ export const LibraryTab: React.FC = () => {
           renderItem={({ item }) => (
             <PlaylistCard
               playlist={item}
+              isExpanded={expandedId === item.id}
+              expandedTracks={playlistTracks[item.id] ?? []}
+              currentTrackId={currentTrack?.id}
               onPress={() => handlePlaylistPress(item)}
-              onLongPress={() => deletePlaylist(item.id)}
+              onLongPress={() => handlePlaylistLongPress(item.id)}
+              onTrackPress={(track) =>
+                handlePlaylistTrackPress(track, playlistTracks[item.id] ?? [], item)
+              }
             />
           )}
         />
@@ -231,7 +264,7 @@ export const LibraryTab: React.FC = () => {
         />
       )}
 
-      {/* ── Add to playlist bottom sheet ─────────────────────────────────── */}
+      {/* ── Add to playlist bottom sheet ──────────────────────────────────── */}
       <Modal
         visible={showAddSheet}
         transparent
@@ -244,10 +277,8 @@ export const LibraryTab: React.FC = () => {
           onPress={() => { setShowAddSheet(false); setSelectedTrack(null); }}
         >
           <View style={styles.sheet}>
-            {/* Handle bar */}
             <View style={styles.sheetHandle} />
 
-            {/* Track being added */}
             <View style={styles.sheetTrackInfo}>
               <Text style={styles.sheetLabel}>Add to playlist</Text>
               <Text style={styles.sheetTrackName} numberOfLines={1}>
@@ -255,12 +286,9 @@ export const LibraryTab: React.FC = () => {
               </Text>
             </View>
 
-            {/* No playlists yet */}
             {playlists.length === 0 ? (
               <View style={styles.sheetEmpty}>
-                <Text style={styles.sheetEmptyText}>
-                  No playlists yet — create one first
-                </Text>
+                <Text style={styles.sheetEmptyText}>No playlists yet — create one first</Text>
                 <TouchableOpacity
                   style={styles.sheetCreateBtn}
                   onPress={() => {
@@ -273,11 +301,9 @@ export const LibraryTab: React.FC = () => {
                 </TouchableOpacity>
               </View>
             ) : (
-              /* Playlist options */
               playlists.map(playlist => {
-                const alreadyIn  = playlist.trackIds.includes(selectedTrack?.id ?? '');
-                const isAdding   = addingToPlaylist === playlist.id;
-
+                const alreadyIn = playlist.trackIds.includes(selectedTrack?.id ?? '');
+                const isAdding  = addingToPlaylist === playlist.id;
                 return (
                   <TouchableOpacity
                     key={playlist.id}
@@ -289,30 +315,20 @@ export const LibraryTab: React.FC = () => {
                     activeOpacity={alreadyIn ? 1 : 0.7}
                     disabled={isAdding}
                   >
-                    {/* Color swatch */}
                     <View style={[
                       styles.sheetSwatchWrap,
                       { backgroundColor: `${playlist.color ?? C.primary}22`,
                         borderColor:      `${playlist.color ?? C.primary}44` },
                     ]}>
-                      <View style={[
-                        styles.sheetSwatch,
-                        { backgroundColor: playlist.color ?? C.primary },
-                      ]} />
+                      <View style={[styles.sheetSwatch, { backgroundColor: playlist.color ?? C.primary }]} />
                     </View>
-
-                    {/* Name + count */}
                     <View style={styles.sheetPlaylistInfo}>
-                      <Text style={styles.sheetPlaylistName}>
-                        {playlist.name}
-                      </Text>
+                      <Text style={styles.sheetPlaylistName}>{playlist.name}</Text>
                       <Text style={styles.sheetPlaylistMeta}>
                         {playlist.trackIds.length}{' '}
                         {playlist.trackIds.length === 1 ? 'track' : 'tracks'}
                       </Text>
                     </View>
-
-                    {/* Status indicator */}
                     {isAdding ? (
                       <Text style={styles.sheetAdding}>Adding…</Text>
                     ) : alreadyIn ? (
@@ -329,7 +345,6 @@ export const LibraryTab: React.FC = () => {
               })
             )}
 
-            {/* Create new playlist shortcut */}
             {playlists.length > 0 && (
               <TouchableOpacity
                 style={styles.sheetNewPlaylist}
@@ -339,16 +354,14 @@ export const LibraryTab: React.FC = () => {
                   setShowNewPlaylist(true);
                 }}
               >
-                <Text style={styles.sheetNewPlaylistText}>
-                  + Create new playlist
-                </Text>
+                <Text style={styles.sheetNewPlaylistText}>+ Create new playlist</Text>
               </TouchableOpacity>
             )}
           </View>
         </TouchableOpacity>
       </Modal>
 
-      {/* ── New playlist modal ───────────────────────────────────────────── */}
+      {/* ── New playlist modal ────────────────────────────────────────────── */}
       <Modal
         visible={showNewPlaylist}
         transparent
@@ -393,35 +406,86 @@ export const LibraryTab: React.FC = () => {
 // ─── PlaylistCard ─────────────────────────────────────────────────────────────
 
 type PlaylistCardProps = {
-  playlist:    Playlist;
-  onPress:     () => void;
-  onLongPress: () => void;
+  playlist:       Playlist;
+  isExpanded:     boolean;
+  expandedTracks: Track[];
+  currentTrackId?: string;
+  onPress:        () => void;
+  onLongPress:    () => void;
+  onTrackPress:   (track: Track) => void;
 };
 
 const PlaylistCard: React.FC<PlaylistCardProps> = ({
-  playlist, onPress, onLongPress,
+  playlist, isExpanded, expandedTracks, currentTrackId,
+  onPress, onLongPress, onTrackPress,
 }) => (
-  <TouchableOpacity
-    style={styles.playlistCard}
-    onPress={onPress}
-    onLongPress={onLongPress}
-    activeOpacity={0.7}
-  >
-    <View style={[
-      styles.playlistArt,
-      { backgroundColor: `${playlist.color ?? C.primary}22`,
-        borderColor:      `${playlist.color ?? C.primary}44` },
-    ]}>
-      <View style={[styles.playlistDot, { backgroundColor: playlist.color ?? C.primary }]} />
-    </View>
-    <View style={styles.playlistInfo}>
-      <Text style={styles.playlistName} numberOfLines={1}>{playlist.name}</Text>
-      <Text style={styles.playlistMeta}>
-        {playlist.trackIds.length} {playlist.trackIds.length === 1 ? 'track' : 'tracks'}
-      </Text>
-    </View>
-    <Text style={styles.chevron}>›</Text>
-  </TouchableOpacity>
+  <View style={styles.playlistCard}>
+
+    {/* Main card row */}
+    <TouchableOpacity
+      style={styles.playlistCardRow}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={0.7}
+    >
+      <View style={[
+        styles.playlistArt,
+        { backgroundColor: `${playlist.color ?? C.primary}22`,
+          borderColor:      `${playlist.color ?? C.primary}44` },
+      ]}>
+        <View style={[styles.playlistDot, { backgroundColor: playlist.color ?? C.primary }]} />
+      </View>
+      <View style={styles.playlistInfo}>
+        <Text style={styles.playlistName} numberOfLines={1}>{playlist.name}</Text>
+        <Text style={styles.playlistMeta}>
+          {playlist.trackIds.length} {playlist.trackIds.length === 1 ? 'track' : 'tracks'}
+        </Text>
+      </View>
+      {/* Chevron rotates when expanded */}
+      <Text style={[styles.chevron, isExpanded && styles.chevronExpanded]}>›</Text>
+    </TouchableOpacity>
+
+    {/* Expandable track list */}
+    {isExpanded && (
+      <View style={styles.expandedList}>
+        {expandedTracks.length === 0 ? (
+          <Text style={styles.expandedEmpty}>No tracks in this playlist</Text>
+        ) : (
+          expandedTracks.map((track, index) => (
+            <TouchableOpacity
+              key={track.id}
+              style={[
+                styles.expandedRow,
+                index === expandedTracks.length - 1 && styles.expandedRowLast,
+                currentTrackId === track.id && styles.expandedRowActive,
+              ]}
+              onPress={() => onTrackPress(track)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.expandedIndex}>{index + 1}</Text>
+              <View style={styles.expandedInfo}>
+                <Text
+                  style={[
+                    styles.expandedTitle,
+                    currentTrackId === track.id && styles.expandedTitleActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {track.title}
+                </Text>
+                <Text style={styles.expandedMeta} numberOfLines={1}>
+                  {track.artist ?? 'Unknown'} · {formatDuration(track.duration)}
+                </Text>
+              </View>
+              {currentTrackId === track.id && (
+                <View style={styles.expandedPlayingDot} />
+              )}
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
+    )}
+  </View>
 );
 
 // ─── LibraryTrackRow ──────────────────────────────────────────────────────────
@@ -430,7 +494,7 @@ type LibraryTrackRowProps = {
   track:       Track;
   isPlaying:   boolean;
   onPress:     () => void;
-  onLongPress: () => void;       // ← added
+  onLongPress: () => void;
 };
 
 const LibraryTrackRow: React.FC<LibraryTrackRowProps> = ({
@@ -439,7 +503,7 @@ const LibraryTrackRow: React.FC<LibraryTrackRowProps> = ({
   <TouchableOpacity
     style={[styles.trackRow, isPlaying && styles.trackRowActive]}
     onPress={onPress}
-    onLongPress={onLongPress}   // ← added
+    onLongPress={onLongPress}
     activeOpacity={0.7}
   >
     <View style={[styles.trackArt, isPlaying && styles.trackArtActive]}>
@@ -461,25 +525,19 @@ const LibraryTrackRow: React.FC<LibraryTrackRowProps> = ({
     </View>
     <View style={[
       styles.sourceBadge,
-      track.source === 'local'
-        ? styles.badgeLocal
-        : track.source === 'builtin'
-        ? styles.badgeBuiltin
-        : styles.badgeWeb,
+      track.source === 'local'   ? styles.badgeLocal   :
+      track.source === 'builtin' ? styles.badgeBuiltin  :
+                                   styles.badgeWeb,
     ]}>
       <Text style={[
         styles.sourceBadgeText,
-        track.source === 'local'
-          ? { color: C.primary }
-          : track.source === 'builtin'
-          ? { color: C.secondary }
-          : { color: C.accent },
+        track.source === 'local'   ? { color: C.primary }   :
+        track.source === 'builtin' ? { color: C.secondary }  :
+                                     { color: C.accent },
       ]}>
-        {track.source === 'local'
-          ? 'Local'
-          : track.source === 'builtin'
-          ? 'Built-in'
-          : 'Web'}
+        {track.source === 'local'   ? 'Local'    :
+         track.source === 'builtin' ? 'Built-in' :
+                                      'Web'}
       </Text>
     </View>
   </TouchableOpacity>
@@ -505,10 +563,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   newBtn: {
-    backgroundColor:  C.primaryFaint,
-    borderWidth:      0.5,
-    borderColor:      C.primaryDim,
-    borderRadius:     R.full,
+    backgroundColor:   C.primaryFaint,
+    borderWidth:       0.5,
+    borderColor:       C.primaryDim,
+    borderRadius:      R.full,
     paddingVertical:   5,
     paddingHorizontal: 14,
   },
@@ -536,7 +594,6 @@ const styles = StyleSheet.create({
   toggleText:       { fontSize: 13, fontWeight: '500', color: C.textDim },
   toggleTextActive: { color: '#fff' },
 
-  // Hint
   hint: {
     backgroundColor: C.surfaceLight,
     borderRadius:    R.md,
@@ -544,33 +601,32 @@ const styles = StyleSheet.create({
     marginBottom:    S.sm,
     alignItems:      'center',
   },
-  hintText: {
-    fontSize: 11,
-    color:    C.textDim,
-  },
+  hintText: { fontSize: 11, color: C.textDim },
 
   listContent: { paddingBottom: S.xl },
 
-  // Playlist card
+  // ── Playlist card ──────────────────────────────────────────────────────────
   playlistCard: {
-    flexDirection:   'row',
-    alignItems:      'center',
     backgroundColor: C.surface,
     borderWidth:     0.5,
     borderColor:     C.border,
     borderRadius:    R.lg,
     padding:         S.md,
     marginBottom:    S.sm,
-    gap:             S.md,
+  },
+  playlistCardRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           S.md,
   },
   playlistArt: {
-    width:           44,
-    height:          44,
-    borderRadius:    R.md,
-    borderWidth:     0.5,
-    alignItems:      'center',
-    justifyContent:  'center',
-    flexShrink:      0,
+    width:          44,
+    height:         44,
+    borderRadius:   R.md,
+    borderWidth:    0.5,
+    alignItems:     'center',
+    justifyContent: 'center',
+    flexShrink:     0,
   },
   playlistDot: {
     width:        14,
@@ -588,9 +644,66 @@ const styles = StyleSheet.create({
     color:     C.textDim,
     marginTop: 3,
   },
-  chevron: { fontSize: 22, color: C.textDim },
+  chevron: {
+    fontSize:  22,
+    color:     C.textDim,
+  },
+  chevronExpanded: {
+    transform: [{ rotate: '90deg' }],
+  },
 
-  // Track row
+  // ── Expanded track list ────────────────────────────────────────────────────
+  expandedList: {
+    marginTop:      S.sm,
+    paddingTop:     S.sm,
+    borderTopWidth: 0.5,
+    borderTopColor: C.borderFaint,
+  },
+  expandedEmpty: {
+    fontSize:        12,
+    color:           C.textDim,
+    textAlign:       'center',
+    paddingVertical: S.md,
+  },
+  expandedRow: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingVertical:   8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: C.borderFaint,
+    gap:               S.sm,
+  },
+  expandedRowLast: {
+    borderBottomWidth: 0,
+    paddingBottom:     0,
+  },
+  expandedRowActive: {
+    backgroundColor:  C.primaryFaint,
+    borderRadius:     R.sm,
+    paddingHorizontal: S.sm,
+    borderBottomWidth: 0,
+    marginBottom:      0,
+  },
+  expandedIndex: {
+    fontSize:   11,
+    color:      C.textDim,
+    width:      18,
+    textAlign:  'center',
+    flexShrink: 0,
+  },
+  expandedInfo:       { flex: 1 },
+  expandedTitle:      { fontSize: 13, fontWeight: '500', color: C.textMuted },
+  expandedTitleActive: { color: C.primary },
+  expandedMeta:       { fontSize: 11, color: C.textDim, marginTop: 2 },
+  expandedPlayingDot: {
+    width:           6,
+    height:          6,
+    borderRadius:    3,
+    backgroundColor: C.primary,
+    flexShrink:      0,
+  },
+
+  // ── Library track row ──────────────────────────────────────────────────────
   trackRow: {
     flexDirection:   'row',
     alignItems:      'center',
@@ -638,9 +751,9 @@ const styles = StyleSheet.create({
     borderRadius:      R.full,
     borderWidth:       0.5,
   },
-  badgeLocal:   { backgroundColor: C.primaryFaint, borderColor: C.primaryDim },
-  badgeBuiltin: { backgroundColor: '#0a2420',       borderColor: '#0f3830'    },
-  badgeWeb:     { backgroundColor: '#2a1a08',       borderColor: '#3a2510'    },
+  badgeLocal:      { backgroundColor: C.primaryFaint, borderColor: C.primaryDim },
+  badgeBuiltin:    { backgroundColor: '#0a2420',      borderColor: '#0f3830'    },
+  badgeWeb:        { backgroundColor: '#2a1a08',      borderColor: '#3a2510'    },
   sourceBadgeText: { fontSize: 9, fontWeight: '500' },
 
   // ── Add to playlist sheet ──────────────────────────────────────────────────
@@ -650,14 +763,14 @@ const styles = StyleSheet.create({
     justifyContent:  'flex-end',
   },
   sheet: {
-    backgroundColor: C.surface,
+    backgroundColor:      C.surface,
     borderTopLeftRadius:  24,
     borderTopRightRadius: 24,
-    borderWidth:     0.5,
-    borderColor:     C.border,
-    paddingHorizontal: S.md,
-    paddingBottom:   40,
-    paddingTop:      S.sm,
+    borderWidth:          0.5,
+    borderColor:          C.border,
+    paddingHorizontal:    S.md,
+    paddingBottom:        40,
+    paddingTop:           S.sm,
   },
   sheetHandle: {
     width:           40,
@@ -668,8 +781,8 @@ const styles = StyleSheet.create({
     marginBottom:    S.md,
   },
   sheetTrackInfo: {
-    marginBottom: S.md,
-    paddingBottom: S.md,
+    marginBottom:      S.md,
+    paddingBottom:     S.md,
     borderBottomWidth: 0.5,
     borderBottomColor: C.borderFaint,
   },
@@ -686,24 +799,22 @@ const styles = StyleSheet.create({
     color:      C.textPrimary,
   },
   sheetPlaylistRow: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    paddingVertical: S.md,
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingVertical:   S.md,
     borderBottomWidth: 0.5,
     borderBottomColor: C.borderFaint,
-    gap:            S.md,
+    gap:               S.md,
   },
-  sheetPlaylistRowDone: {
-    opacity: 0.5,
-  },
+  sheetPlaylistRowDone: { opacity: 0.5 },
   sheetSwatchWrap: {
-    width:        40,
-    height:       40,
-    borderRadius: R.md,
-    borderWidth:  0.5,
-    alignItems:   'center',
+    width:          40,
+    height:         40,
+    borderRadius:   R.md,
+    borderWidth:    0.5,
+    alignItems:     'center',
     justifyContent: 'center',
-    flexShrink:   0,
+    flexShrink:     0,
   },
   sheetSwatch: {
     width:        12,
@@ -716,20 +827,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color:      C.textPrimary,
   },
-  sheetPlaylistMeta: {
-    fontSize:  11,
-    color:     C.textDim,
-    marginTop: 2,
-  },
-  sheetAdding: {
-    fontSize: 12,
-    color:    C.textDim,
-  },
+  sheetPlaylistMeta: { fontSize: 11, color: C.textDim, marginTop: 2 },
+  sheetAdding:       { fontSize: 12, color: C.textDim },
   sheetDoneBadge: {
-    backgroundColor: '#0a2420',
-    borderWidth:     0.5,
-    borderColor:     '#0f3830',
-    borderRadius:    R.full,
+    backgroundColor:   '#0a2420',
+    borderWidth:       0.5,
+    borderColor:       '#0f3830',
+    borderRadius:      R.full,
     paddingVertical:   3,
     paddingHorizontal: 10,
   },
@@ -739,10 +843,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   sheetAddBtn: {
-    backgroundColor:  C.primaryFaint,
-    borderWidth:      0.5,
-    borderColor:      C.primaryDim,
-    borderRadius:     R.full,
+    backgroundColor:   C.primaryFaint,
+    borderWidth:       0.5,
+    borderColor:       C.primaryDim,
+    borderRadius:      R.full,
     paddingVertical:   5,
     paddingHorizontal: 12,
   },
@@ -756,15 +860,12 @@ const styles = StyleSheet.create({
     alignItems:      'center',
     gap:             S.md,
   },
-  sheetEmptyText: {
-    fontSize: 13,
-    color:    C.textDim,
-  },
+  sheetEmptyText: { fontSize: 13, color: C.textDim },
   sheetCreateBtn: {
-    backgroundColor:  C.primaryFaint,
-    borderWidth:      0.5,
-    borderColor:      C.primaryDim,
-    borderRadius:     R.full,
+    backgroundColor:   C.primaryFaint,
+    borderWidth:       0.5,
+    borderColor:       C.primaryDim,
+    borderRadius:      R.full,
     paddingVertical:   8,
     paddingHorizontal: 20,
   },
@@ -774,14 +875,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   sheetNewPlaylist: {
-    alignItems:    'center',
+    alignItems:      'center',
     paddingVertical: S.md,
-    marginTop:     S.sm,
+    marginTop:       S.sm,
   },
-  sheetNewPlaylistText: {
-    fontSize: 13,
-    color:    C.primary,
-  },
+  sheetNewPlaylistText: { fontSize: 13, color: C.primary },
 
   // ── New playlist modal ─────────────────────────────────────────────────────
   modalOverlay: {
@@ -828,7 +926,7 @@ const styles = StyleSheet.create({
     borderColor:     C.border,
     alignItems:      'center',
   },
-  modalCancelText: { fontSize: 14, color: C.textDim },
+  modalCancelText:     { fontSize: 14, color: C.textDim },
   modalCreate: {
     flex:            1,
     paddingVertical: 12,
@@ -837,7 +935,7 @@ const styles = StyleSheet.create({
     alignItems:      'center',
   },
   modalCreateDisabled: { opacity: 0.4 },
-  modalCreateText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  modalCreateText:     { fontSize: 14, fontWeight: '600', color: '#fff' },
 
   // Empty state
   empty: {

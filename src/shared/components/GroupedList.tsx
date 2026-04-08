@@ -1,9 +1,13 @@
-import React from 'react';
-import { FlatList, View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { FlatList, View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { Ionicons as IonIcons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import { useTasksStore } from '@/stores/tasksStore';
+import ModalComponent from './ModalComponent';
 
 const C = Colors.dark;
 const S = Colors.spacing;
+const R = Colors.radius;
 
 type Section<T> = { title: string; data: T[] };
 
@@ -13,6 +17,24 @@ type Props<T> = {
   keyExtractor?: (item: T, index: number) => string;
   emptyMessage?: string;
 };
+const ButtonComponent = ()=>{
+  const openModal = useTasksStore((state) => state.openModal);
+  const toggleModal = useTasksStore((state) => state.toggleModal);
+
+  const handlePress = () => {
+    if (!openModal) {
+      toggleModal();
+    }
+  }
+  return(
+     <View style={{ position: 'absolute', bottom: S.lg, right: S.lg ,backgroundColor: C.surface, padding: S.sm, borderRadius: 999,borderBlockColor:C.border, borderWidth:1}}>
+      <TouchableOpacity onPress={handlePress}>
+        <IonIcons name="add" size={24} color={C.primary} />
+      </TouchableOpacity>
+    </View>
+  )
+}
+
 
 export function GroupedList<T>({
   sections,
@@ -22,16 +44,25 @@ export function GroupedList<T>({
 }: Props<T>) {
   // All sections empty
   const isEmpty = sections.every(s => s.data.length === 0);
-
+  const openModal = useTasksStore((state) => state.openModal);
   if (isEmpty) {
+
     return (
       <View style={styles.empty}>
+
+      <View >
         <Text style={styles.emptyText}>{emptyMessage}</Text>
       </View>
+      {openModal && <ModalComponent />}
+      <ButtonComponent />
+      </View>
+
     );
   }
 
   return (
+    <View>
+
     <FlatList
       data={sections}
       keyExtractor={(item, index) => item.title + index}
@@ -50,6 +81,10 @@ export function GroupedList<T>({
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.content}
     />
+    {openModal && <ModalComponent />}
+    <ButtonComponent />
+    </View>
+
   );
 }
 

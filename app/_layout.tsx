@@ -34,6 +34,7 @@ export default function RootLayout() {
         <Stack.Screen name="ai/bedtime"    options={{ headerShown: false }} />
         <Stack.Screen name="ai/focusmix"   options={{ headerShown: false }} />
         <Stack.Screen name="general/AddGoalScreen"     options={{ headerShown: false }} />
+        <Stack.Screen name="general/GoogleSignInScreen"     options={{ headerShown: false }} />
         </Stack>
   );
 }

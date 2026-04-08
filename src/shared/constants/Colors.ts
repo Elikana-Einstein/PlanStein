@@ -28,6 +28,9 @@ export const Colors = {
     // Borders
     border:       '#2A2A3A',
     borderFaint:  '#1A1A24',
+
+    //text
+    text: '#FFFFFF',
   },
   spacing: {
     xs:  4,

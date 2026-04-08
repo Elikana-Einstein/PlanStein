@@ -104,3 +104,50 @@ export const goals = [
         ]
     }
 ];
+
+ export const emails = [
+    {
+      id: 1,
+      sender: 'John Doe',
+      senderEmail: 'john.doe@company.com',
+      subject: 'Urgent: Q4 Report Review',
+      preview: 'Please review the Q4 financial report before tomorrow\'s meeting. There are some critical numbers that need attention...',
+      priority: 'Urgent' ,
+      timestamp: '10:30 AM',
+      isRead: false,
+      hasAttachment: true
+    },
+    {
+      id: 2,
+      sender: 'Sarah Johnson',
+      senderEmail: 'sarah.j@designstudio.com',
+      subject: 'Design Mockups for Review',
+      preview: 'Here are the latest design mockups for the mobile app. Let me know your thoughts on the new color scheme...',
+      priority: 'Normal' ,
+      timestamp: '9:15 AM',
+      isRead: false,
+      hasAttachment: true
+    },
+    {
+      id: 3,
+      sender: 'Team Calendar',
+      senderEmail: 'calendar@company.com',
+      subject: 'Meeting Invitation: Sprint Planning',
+      preview: 'You have been invited to Sprint Planning meeting on Friday at 2:00 PM. Please confirm your attendance...',
+      priority: 'Normal' ,
+      timestamp: 'Yesterday',
+      isRead: true,
+      hasAttachment: false
+    },
+    {
+      id: 4,
+      sender: 'Newsletter',
+      senderEmail: 'news@techweekly.com',
+      subject: 'Weekly Tech Digest',
+      preview: 'Top stories this week: New React Native release, AI advancements, and more...',
+      priority: 'Low' ,
+      timestamp: 'Yesterday',
+      isRead: true,
+      hasAttachment: false
+    }
+  ]

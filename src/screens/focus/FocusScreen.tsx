@@ -12,19 +12,22 @@ const C = Colors.dark;
 export const FocusScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<FocusTabId>('focus');
 
-  const renderTab = () => {
-    switch (activeTab) {
-      case 'explore': return <ExploreTab />;
-      case 'library': return <LibraryTab />;
-      default:        return <FocusTab />;
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <View style={styles.content}>
-          {renderTab()}
+
+          {/* All three tabs stay mounted — only visibility changes */}
+          <View style={[styles.tab, activeTab !== 'focus'   && styles.hidden]}>
+            <FocusTab />
+          </View>
+          <View style={[styles.tab, activeTab !== 'explore' && styles.hidden]}>
+            <ExploreTab />
+          </View>
+          <View style={[styles.tab, activeTab !== 'library' && styles.hidden]}>
+            <LibraryTab />
+          </View>
+
         </View>
         <PlayerNav activeTab={activeTab} onTabPress={setActiveTab} />
       </View>
@@ -42,5 +45,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  tab: {
+    flex:     1,
+    position: 'absolute',
+    top:      0,
+    left:     0,
+    right:    0,
+    bottom:   0,
+  },
+  hidden: {
+    display: 'none',
   },
 });

@@ -160,3 +160,18 @@ export const formatTimestamp = (timestamp: number): string => {
   const isAM = time.includes('am');
   return `${time} ${isAM ? 'am' : 'pm'}`;
 }
+const date = new Date();
+// Helper function
+export const isToday = (date: any) => {
+  
+ 
+  
+  const today = new Date();
+  const formattedToday = today.toLocaleDateString('en-US', { 
+    weekday: 'short', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+
+   return String(date) === String(formattedToday);
+};

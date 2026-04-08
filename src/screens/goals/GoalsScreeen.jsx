@@ -4,13 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { FlatList, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { router } from 'expo-router';
 import { GoalsService } from '@/services/GoalsService';
+import { useGoalsStore } from '@/stores/goalsStore';
 
 
 //progress bar component
 const ProgressBar = ({ progress }) => (
-  <View style={{backgroundColor: 'lightgray',borderRadius:10}} className="w-full h-4 bg-gray-300 rounded-full overflow-hidden flex-row mt-2 items-center">
+  <View style={{backgroundColor: 'lightgray',borderRadius:10}} className="w-full h-4 bg-gray-300 rounded-full overflow-hidden flex-row mt-2  items-center">
     <View  className="h-full" style={{ width: `${progress}%`,backgroundColor: 'green',borderRadius: 10 }} />
-    <Text style={{ fontFamily: 'Inter-Regular', fontSize: 8,color: 'red' }} className="text-red-800 text-sm mt-1">
+    <Text style={{ fontFamily: 'Inter-Regular', fontSize: 8,color: 'red' }} className="text-red-800 text-sm ">
       {progress} % completed
     </Text>
   </View>
@@ -18,6 +19,7 @@ const ProgressBar = ({ progress }) => (
 
 // Helper: render each subgoal bullet
 const SubgoalItem = ({ subgoal }) =>{
+  const {loadActiveGoals} = useGoalsStore()
 
     const handlemarkAsComplete = async (subgoalId) => {
         try {
@@ -25,6 +27,7 @@ const SubgoalItem = ({ subgoal }) =>{
         } catch (error) {
             console.error('Error marking subgoal as complete:', error);
         }
+        loadActiveGoals()
     }
     return(
   <View className="flex-row items-start mb-2 ml-2">
@@ -103,7 +106,7 @@ const GoalCard = ({ goal }) =>{
         <Ionicons name="trash" size={16} color="white" style={{ marginLeft: 8 }} />
       </TouchableOpacity>
         </View>
-      <ProgressBar progress={20} />
+      <ProgressBar progress={goal.progress} />
       <Text style={{ fontFamily: 'Inter-Regular', fontSize: 10 }} className="text-primary text-sm mt-1">
         {goal.episodes.length} episodes • total {goal.episodes.reduce((sum, ep) => sum + ep.subgoals.length, 0)} tasks
       </Text>
@@ -119,13 +122,12 @@ const GoalCard = ({ goal }) =>{
 );
 }
 export default function GoalsScreeen() {
-    const [goals, setGoals] = useState([]);
+    
+    const {loadActiveGoals} = useGoalsStore()
     useEffect(() => {
         const fetchGoals = async () => {
             try {
-                const data = await GoalsService.getAllGoals();
-                setGoals(data);
-                console.log('Fetched Goals:', data);
+               loadActiveGoals();
             }
             catch (error) {
                 console.error('Error fetching goals:', error);
@@ -133,6 +135,8 @@ export default function GoalsScreeen() {
         }
         fetchGoals();
     },[])
+    const goals = useGoalsStore().goals;
+    
   return (
     <GestureHandlerRootView className="flex-1 bg-gray-100">
       <FlatList

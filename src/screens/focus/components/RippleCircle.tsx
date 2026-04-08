@@ -1,10 +1,79 @@
 import { Colors } from '@/shared/constants/Colors';
 import { SessionPhase } from '@/shared/types';
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+  withDelay,
+  withSequence,
+  Easing,
+  cancelAnimation,
+} from 'react-native-reanimated';
 
-const C = Colors.dark;
+const C     = Colors.dark;
+const ARENA = 220;
 
+const PHASE_COLOR: Record<SessionPhase, string> = {
+  focus:     C.primary,
+  break:     C.secondary,
+  longBreak: C.accent,
+  idle:      C.primary,
+};
+
+// ─── Single ripple ring ───────────────────────────────────────────────────────
+const RippleRing: React.FC<{
+  size: number; color: string; delay: number; isRunning: boolean;
+}> = ({ size, color, delay, isRunning }) => {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    if (!isRunning) {
+      cancelAnimation(progress);
+      progress.value = withTiming(0, { duration: 300 });
+      return;
+    }
+    progress.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 3000, easing: Easing.out(Easing.cubic) }),
+          withTiming(0, { duration: 0 }),
+        ),
+        -1,
+        false,
+      ),
+    );
+  }, [isRunning]);
+
+  const animStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+    return {
+      opacity:   p < 0.3 ? (p / 0.3) * 0.45 : ((1 - p) / 0.7) * 0.45,
+      transform: [{ scale: 0.4 + p * 0.6 }],
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position:     'absolute',
+          width:        size,
+          height:       size,
+          borderRadius: size / 2,
+          borderWidth:  1,
+          borderColor:  color,
+        },
+        animStyle,
+      ]}
+    />
+  );
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
 type Props = {
   timeFormatted: string;
   sessionNum:    number;
@@ -13,79 +82,18 @@ type Props = {
   isRunning:     boolean;
 };
 
-// Color per phase
-const PHASE_COLOR: Record<SessionPhase, string> = {
-  focus:     C.primary,
-  break:     C.secondary,
-  longBreak: C.accent,
-  idle:      C.primary,
-};
-
 export const RippleCircle: React.FC<Props> = ({
   timeFormatted, sessionNum, totalSessions, phase, isRunning,
 }) => {
   const color = PHASE_COLOR[phase];
 
-  // Three ripple rings, each offset in time
-  const ripple1 = useRef(new Animated.Value(0)).current;
-  const ripple2 = useRef(new Animated.Value(0)).current;
-  const ripple3 = useRef(new Animated.Value(0)).current;
-
-  const createRipple = (anim: Animated.Value, delay: number) =>
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.timing(anim, {
-          toValue:         1,
-          duration:        3000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim, {
-          toValue:         0,
-          duration:        0,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-  useEffect(() => {
-    if (!isRunning) {
-      ripple1.setValue(0);
-      ripple2.setValue(0);
-      ripple3.setValue(0);
-      return;
-    }
-    const a1 = createRipple(ripple1, 0);
-    const a2 = createRipple(ripple2, 900);
-    const a3 = createRipple(ripple3, 1800);
-    a1.start(); a2.start(); a3.start();
-    return () => { a1.stop(); a2.stop(); a3.stop(); };
-  }, [isRunning, phase]);
-
-  const makeRippleStyle = (anim: Animated.Value) => ({
-    opacity: anim.interpolate({
-      inputRange:  [0, 0.3, 1],
-      outputRange: [0, 0.6, 0],
-    }),
-    transform: [{
-      scale: anim.interpolate({
-        inputRange:  [0, 1],
-        outputRange: [0.4, 1],
-      }),
-    }],
-  });
-
   return (
     <View style={styles.arena}>
-      {/* Ripple rings */}
-      <Animated.View style={[styles.ripple, styles.ripple1,
-        makeRippleStyle(ripple1), { borderColor: color }]} />
-      <Animated.View style={[styles.ripple, styles.ripple2,
-        makeRippleStyle(ripple2), { borderColor: color }]} />
-      <Animated.View style={[styles.ripple, styles.ripple3,
-        makeRippleStyle(ripple3), { borderColor: color }]} />
+      <RippleRing size={ARENA}        color={color} delay={0}    isRunning={isRunning} />
+      <RippleRing size={ARENA * 0.78} color={color} delay={900}  isRunning={isRunning} />
+      <RippleRing size={ARENA * 0.56} color={color} delay={1800} isRunning={isRunning} />
 
-      {/* Glow ring */}
+      {/* Static glow ring */}
       <View style={[styles.glowRing, { borderColor: `${color}33` }]} />
 
       {/* Center circle */}
@@ -102,7 +110,6 @@ export const RippleCircle: React.FC<Props> = ({
   );
 };
 
-const ARENA = 220;
 const styles = StyleSheet.create({
   arena: {
     width:          ARENA,
@@ -111,14 +118,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: 12,
   },
-  ripple: {
-    position:     'absolute',
-    borderRadius: 9999,
-    borderWidth:  1,
-  },
-  ripple1: { width: ARENA,       height: ARENA       },
-  ripple2: { width: ARENA * .78, height: ARENA * .78 },
-  ripple3: { width: ARENA * .56, height: ARENA * .56 },
   glowRing: {
     position:     'absolute',
     width:        110,
@@ -127,14 +126,14 @@ const styles = StyleSheet.create({
     borderWidth:  1,
   },
   center: {
-    width:          100,
-    height:         100,
-    borderRadius:   50,
+    width:           100,
+    height:          100,
+    borderRadius:    50,
     backgroundColor: C.surface,
-    borderWidth:    1.5,
-    alignItems:     'center',
-    justifyContent: 'center',
-    zIndex:         5,
+    borderWidth:     1.5,
+    alignItems:      'center',
+    justifyContent:  'center',
+    zIndex:          5,
   },
   timer: {
     fontSize:      22,

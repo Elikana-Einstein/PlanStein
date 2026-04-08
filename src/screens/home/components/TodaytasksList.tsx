@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Task, TaskPriority, TaskTag } from '@/shared/types/index';
 import { Colors } from '@/shared/constants/Colors';
+import { isToday } from '@/shared/utils';
 
 const C = Colors.dark;
 const S = Colors.spacing;
@@ -13,17 +14,18 @@ type Props = {
 };
 
 export const TodayTasksList: React.FC<Props> = ({ tasks, onToggle }) => {
-  if (tasks.length === 0) {
+  if (tasks.filter(task =>isToday(task.dueDate)).length === 0) {
+      
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No tasks for today</Text>
+        <Text style={styles.emptyText}>No tasks for today. Did you forget to add tasks for Today</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {tasks.slice(0, 4).map((task) => (
+      {tasks.filter(task =>isToday(task.dueDate)).map((task) => (
         <TaskRow key={task.id} task={task} onToggle={onToggle} />
       ))}
     </View>
@@ -41,7 +43,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, onToggle }) => {
   const priorityColor = PRIORITY_COLOR[task.priority] ?? C.primary;
   const tagStyle      = TAG_STYLE[task.tag]           ?? TAG_STYLE.default;
   const dueLabel      = task.dueDate
-    ? formatDueDate(task.dueDate)
+    ? task.dueDate
     : 'No due date';
 
   return (

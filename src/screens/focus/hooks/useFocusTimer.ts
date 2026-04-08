@@ -1,93 +1,118 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-
-import { useState } from 'react';
 import { useFocusStore } from '@/stores/useFocusStore';
-import { DURATIONS } from '@/shared/constants/durations';
 import { FocusService } from '@/services/FocusService';
+import { DURATIONS } from '@/shared/constants/durations';
 
 export function useFocusTimer() {
   const {
     isRunning, phase, mode, sessionNum,
-    totalSessions, setRunning, setPhase,
-    nextSession, reset,
+    totalSessions, duration,
+    setRunning, setPhase, nextSession, reset,
   } = useFocusStore();
 
-  const durations = DURATIONS[mode];
+  // DURATIONS is now a pure function — pass duration directly
+  const durations        = DURATIONS(duration);
+  const currentDurations = durations[mode];
 
-  const initialTime = phase === 'focus'
-    ? durations.focus
-    : phase === 'longBreak'
-    ? durations.longBreak
-    : durations.break;
+  const getCurrentTime = useCallback((): number => {
+    if (phase === 'focus')     return currentDurations.focus;
+    if (phase === 'longBreak') return currentDurations.longBreak;
+    if (phase === 'break')     return currentDurations.break;
+    return currentDurations.focus; // idle — show focus time as preview
+  }, [phase, currentDurations]);
 
-  const [timeLeft, setTimeLeft] = useState(durations.focus);
+  const [timeLeft, setTimeLeft] = useState<number>(getCurrentTime);
 
-  const intervalRef    = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedAtRef   = useRef<number>(0);
-  const appStateRef    = useRef<AppStateStatus>('active');
+  const intervalRef      = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionStartRef  = useRef<number>(0);   // when this session actually began
+  const backgroundedAtRef = useRef<number>(0);  // when app went to background
+  const appStateRef      = useRef<AppStateStatus>('active');
+  const isCompletingRef  = useRef<boolean>(false); // guard against double-fire
 
-  // Format seconds → "MM:SS"
+  // ─── Helpers ────────────────────────────────────────────────────────────────
+
   const formatTime = (secs: number): string => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
 
+  const clearTick = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  // ─── Phase complete ──────────────────────────────────────────────────────────
+
   const phaseComplete = useCallback(async () => {
-    clearInterval(intervalRef.current!);
+    // Guard: prevent firing more than once per phase
+    if (isCompletingRef.current) return;
+    isCompletingRef.current = true;
+
+    clearTick();
     setRunning(false);
 
-    // Save completed session
     if (phase === 'focus') {
       await FocusService.saveSession({
-        startedAt:    startedAtRef.current,
+        startedAt:    sessionStartRef.current,
         endedAt:      Date.now(),
-        durationMins: Math.round(durations.focus / 60),
+        durationMins: Math.round(currentDurations.focus / 60),
         phase:        'focus',
         mode,
         wasCompleted: true,
       });
 
-      // Decide what comes next
       const isLastSession = sessionNum >= totalSessions;
       const nextPhase     = isLastSession ? 'longBreak' : 'break';
       setPhase(nextPhase);
-      setTimeLeft(isLastSession ? durations.longBreak : durations.break);
+      setTimeLeft(isLastSession ? currentDurations.longBreak : currentDurations.break);
     } else {
-      // Break finished — go back to focus
+      // Break finished — advance session, return to focus
       nextSession();
       setPhase('focus');
-      setTimeLeft(durations.focus);
+      setTimeLeft(currentDurations.focus);
     }
-  }, [phase, mode, sessionNum, totalSessions]);
 
-  // Start timer
+    isCompletingRef.current = false;
+  }, [phase, mode, sessionNum, totalSessions, currentDurations, setRunning, setPhase, nextSession]);
+
+  // ─── Controls ────────────────────────────────────────────────────────────────
+
   const start = useCallback(() => {
     if (phase === 'idle') setPhase('focus');
-    startedAtRef.current = Date.now();
+    sessionStartRef.current = Date.now();
     setRunning(true);
-  }, [phase]);
+  }, [phase, setPhase, setRunning]);
 
-  // Pause timer
   const pause = useCallback(() => {
+    clearTick();
     setRunning(false);
-    clearInterval(intervalRef.current!);
-  }, []);
+  }, [setRunning]);
 
-  // Reset everything
   const resetTimer = useCallback(() => {
-    clearInterval(intervalRef.current!);
+    clearTick();
     reset();
-    setTimeLeft(DURATIONS[mode].focus);
-  }, [mode]);
+    setTimeLeft(currentDurations.focus);
+    isCompletingRef.current = false;
+  }, [reset, currentDurations]);
 
-  // Tick every second
+  // ─── Sync timeLeft when phase or mode changes ────────────────────────────────
+
+  useEffect(() => {
+    setTimeLeft(getCurrentTime());
+  }, [phase, mode, duration]); // include duration so custom changes are reflected
+
+  // ─── Tick ────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (!isRunning) {
-      clearInterval(intervalRef.current!);
+      clearTick();
       return;
     }
+
     intervalRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -98,33 +123,39 @@ export function useFocusTimer() {
       });
     }, 1000);
 
-    return () => clearInterval(intervalRef.current!);
+    return clearTick;
   }, [isRunning, phaseComplete]);
 
-  // Handle app going to background — keep time accurate
+  // ─── Background / foreground correction ──────────────────────────────────────
+
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (nextState) => {
+    const sub = AppState.addEventListener('change', (nextState: AppStateStatus) => {
       if (appStateRef.current === 'active' && nextState === 'background') {
-        // Store the timestamp when backgrounded
-        startedAtRef.current = Date.now();
+        // Record exactly when we went to background — separate from sessionStartRef
+        backgroundedAtRef.current = Date.now();
       }
+
       if (appStateRef.current !== 'active' && nextState === 'active') {
-        // Calculate elapsed time while in background
         if (isRunning) {
-          const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
-          setTimeLeft(prev => Math.max(0, prev - elapsed));
+          const elapsed = Math.floor((Date.now() - backgroundedAtRef.current) / 1000);
+          setTimeLeft(prev => {
+            const remaining = Math.max(0, prev - elapsed);
+            if (remaining === 0) phaseComplete();
+            return remaining;
+          });
         }
       }
+
       appStateRef.current = nextState;
     });
-    return () => sub.remove();
-  }, [isRunning]);
 
-  const progress = 1 - timeLeft / (
-    phase === 'focus'     ? durations.focus
-    : phase === 'longBreak' ? durations.longBreak
-    : durations.break
-  );
+    return () => sub.remove();
+  }, [isRunning, phaseComplete]);
+
+  // ─── Derived ──────────────────────────────────────────────────────────────────
+
+  const totalTime = getCurrentTime();
+  const progress  = totalTime > 0 ? 1 - timeLeft / totalTime : 0;
 
   return {
     timeLeft,
@@ -133,7 +164,7 @@ export function useFocusTimer() {
     phase,
     sessionNum,
     totalSessions,
-    progress,       // 0–1 for the ring fill
+    progress,
     start,
     pause,
     reset: resetTimer,
