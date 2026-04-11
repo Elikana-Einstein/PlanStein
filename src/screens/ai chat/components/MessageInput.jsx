@@ -10,47 +10,31 @@ import SendLoading from '@/shared/components/sendLoading';
 export default function MessageInput() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
-  
+  const {set_chat_id} = useAIStore()
+  const chatId = useAIStore().chat_id
+
   const handleSend = async () => {
     if (!text.trim() || loading) return;
-
-    // Get or create chat ID
-    let chatId = await AiService.getChatId();
-    console.log(chatId);
-    
+    let chat_id;
     if (!chatId) {
-      chatId = generateUUID();
-      await db.runAsync(
-        `INSERT INTO chats (id, title, created_at, updated_at)
-         VALUES (?, ?, ?, ?)`,
-        [chatId, 'New Chat', Date.now(), Date.now()]
-      );
+      chat_id = generateUUID();
+      set_chat_id(chat_id);
+
+      await AiService.createNewChat(chat_id);
+    }else{
+      chat_id = chatId;
     }
-    chatId = chatId.chat_id; // Extract chat_id from result
+
 
     const userMessage = {
       id: generateUUID(),
-      chat_id: chatId,
+      chat_id,
       sender: 'user',
       text: text, // Make sure this is a string
       timestamp: Date.now(),
     };
-
     try {
-      setLoading(true);
-      
-      // 1. Save user message - FIXED: Pass primitive values
-      await db.runAsync(
-        `INSERT INTO messages (id, chat_id, sender, text, timestamp)
-         VALUES (?, ?, ?, ?, ?)`,
-        [
-          userMessage.id,      // string
-          userMessage.chat_id, // string
-          userMessage.sender,  // string
-          userMessage.text,    // string (primitive)
-          userMessage.timestamp // number
-        ]
-      );
+      await AiService.addMessageToDb(userMessage,'user')
 
       // Update store
       useAIStore.getState().addMessage(userMessage);
@@ -63,7 +47,7 @@ export default function MessageInput() {
 
       const aiMessage = {
         id: generateUUID(),
-        chat_id: chatId,
+        chat_id: chat_id,
         sender: 'ai',
         text: aiResponse,
         timestamp: Date.now(),
@@ -72,24 +56,9 @@ export default function MessageInput() {
       // Update store with AI response
       useAIStore.getState().addMessage(aiMessage);
 
-      // 3. Save AI response - FIXED: Pass primitive values
-      await db.runAsync(
-        `INSERT INTO messages (id, chat_id, sender, text, timestamp)
-         VALUES (?, ?, ?, ?, ?)`,
-        [
-          aiMessage.id,
-          aiMessage.chat_id,
-          aiMessage.sender,
-          aiMessage.text,    // string (primitive)
-          aiMessage.timestamp
-        ]
-      );
-
+      await AiService.addMessageToDb(aiMessage,'ai')
       // 4. Update chat timestamp
-      await db.runAsync(
-        `UPDATE chats SET updated_at = ? WHERE id = ?`,
-        [Date.now(), aiMessage.chat_id]
-      );
+     await AiService.updateTimeStamp(chat_id);
 
     } catch (error) {
       console.error('Send message error:', error);

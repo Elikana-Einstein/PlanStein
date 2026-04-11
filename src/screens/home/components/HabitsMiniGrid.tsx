@@ -2,6 +2,9 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Habit } from '@/shared/types/index';
 import { Colors } from '@/shared/constants/Colors';
+import { router } from 'expo-router';
+import { mockHabits } from '@/shared/utils/dummy';
+import HabitsCard from '@/shared/components/HabitsCard';
 
 const C = Colors.dark;
 const S = Colors.spacing;
@@ -19,21 +22,19 @@ export const HabitsMiniGrid: React.FC<Props> = ({ habits, onToggle }) => {
   if (habits.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No habits yet — add one to get started</Text>
+        <Text style={styles.emptyText}>No habbits yet- </Text>
+        <TouchableOpacity onPress={()=>router.push('/habits/HabitsScreen')}>
+          <Text  style={styles.emptyTextButton}>press here to add one</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
     <View style={styles.grid}>
-      {habits.slice(0, 4).map((habit, index) => (
-        <HabitCard
-          key={habit.id}
-          habit={habit}
-          accentColor={habit.color ?? HABIT_COLORS[index % HABIT_COLORS.length]}
-          onToggle={onToggle}
-        />
-      ))}
+     {habits.map((item,index)=>(
+      <HabitsCard key={index} item={item}/>
+     ))}
     </View>
   );
 };
@@ -46,7 +47,7 @@ type HabitCardProps = {
   onToggle:    (id: string) => void;
 };
 
-const HabitCard: React.FC<HabitCardProps> = ({ habit, accentColor, onToggle }) => {
+export const HabitCard: React.FC<HabitCardProps> = ({ habit, accentColor, onToggle }) => {
   // Badge style changes based on completion
   const badgeStyle = habit.completedToday
     ? { bg: `${accentColor}18`, border: `${accentColor}40`, text: accentColor }
@@ -70,7 +71,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, accentColor, onToggle }) =
 
       {/* Last 7 days dots */}
       <View style={styles.dots}>
-        {habit.lastSevenDays.map((done, i) => (
+        {habit.lastSevenDays?.map((done, i) => (
           <View
             key={i}
             style={[
@@ -100,15 +101,17 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, accentColor, onToggle }) =
 
 const styles = StyleSheet.create({
   grid: {
-    flexDirection:    'row',
+    flexDirection:    'column',
     flexWrap:         'wrap',
     paddingHorizontal: S.md,
     gap:              S.sm,
   },
   empty: {
+   flexDirection:'row',
     paddingHorizontal: S.md,
     paddingVertical:   S.lg,
     alignItems:        'center',
+    marginHorizontal:'auto'
   },
   emptyText: {
     fontSize: 13,
@@ -117,7 +120,7 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    width:           '48%',
+    width:           '100%',
     backgroundColor: C.surface,
     borderWidth:     0.5,
     borderColor:     C.border,
@@ -186,4 +189,12 @@ const styles = StyleSheet.create({
     fontSize:   9,
     fontWeight: '500',
   },
+  emptyTextButton:{
+    color: C.textDim,
+    backgroundColor:C.surface,
+    borderWidth:0.5,
+    borderColor:C.border,
+    borderRadius:20,
+    paddingHorizontal:10
+  }
 });

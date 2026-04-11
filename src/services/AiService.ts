@@ -6,48 +6,25 @@ export interface chatRow {
 export interface getChatidResult {
   chat_id: string;
 }
-const AiService = {
 
-    async sendMessage({ chatId, message }: { chatId: string; message: string }) {
-        try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                },
-                body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
-                    messages: [{ role: 'user', content: message }],
-                }),
-            }); 
-            if (!response.ok) {
-                throw new Error(`API error: ${response.statusText}`);
-            }
-            const data = await response.json();
-            const aiReply = data.choices[0].message.content;
-            return aiReply;
-        } catch (error) {
-            console.error('Error sending message to AI:', error);
-            throw error;
-        }
-    },
+const AiService = { 
 
-async  getChatId():Promise<getChatidResult | null> {
 
- const result = await db.getFirstAsync<chatRow>('SELECT id FROM chats ORDER BY created_at DESC LIMIT 1');
- 
- 
- if (result) {
+  async  getChatId():Promise<getChatidResult | null> {
+
+   const result = await db.getFirstAsync<chatRow>('SELECT id FROM chats ORDER BY created_at DESC LIMIT 1');
   
-   return { chat_id: result.id };
- } else {
-   return null as any;
- }
+  
+   if (result) {
 
-},
+     return { chat_id: result.id };
+   } else {
+     return null as any;
+   }
 
-async sendMessageToGroq(userMessage: string) {
+  },
+
+  async sendMessageToGroq(userMessage: string) {
     const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
     const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY; 
 
@@ -85,6 +62,53 @@ async sendMessageToGroq(userMessage: string) {
     return "Something went wrong.";
   }
     },
+
+  async addMessageToDb(Message:any,type:string){
+
+    if (type  == 'user'){
+      
+      // 1. Save user message 
+      await db.runAsync(
+        `INSERT INTO messages (id, chat_id, sender, text, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          Message.id,      // string
+          Message.chat_id, // string
+          Message.sender,  // string
+          Message.text,    // string (primitive)
+          Message.timestamp // number
+        ]
+      );
+    }else{
+      
+      // 3. Save AI response - FIXED: Pass primitive values  refactor this too
+      await db.runAsync(
+        `INSERT INTO messages (id, chat_id, sender, text, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          Message.id,
+          Message.chat_id,
+          Message.sender,
+          Message.text,    // string (primitive)
+          Message.timestamp
+        ]
+      );
+    }
+  },
+  async createNewChat(id:string){
+    //refactor id and title
+      await db.runAsync(
+        `INSERT INTO chats (id, title, created_at, updated_at)
+         VALUES (?, ?, ?, ?)`,
+        [id, 'New Chat', Date.now(), Date.now()]
+      );
+  },
+  async updateTimeStamp(id:string){
+    await db.runAsync(
+        `UPDATE chats SET updated_at = ? WHERE id = ?`,
+        [Date.now(), id]
+      );
+  },
 
 
   

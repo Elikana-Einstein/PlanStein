@@ -12,7 +12,7 @@ export const UserService = {
       prefs[row.key] = row.value;
     }
     return {
-      name: prefs.name || 'Elikana',
+      name: prefs.name || 'User',
       streak: parseInt(prefs.streak, 10) || 12,
       lastSessionDate: prefs.lastSessionDate || null,
     };
@@ -25,8 +25,4 @@ export const UserService = {
     );
   },
 
-  seedMockUser: async () => {
-    await db.runAsync(`INSERT OR REPLACE INTO user (key, value) VALUES (?, ?)`, ['name', 'Elikana']);
-    await db.runAsync(`INSERT OR REPLACE INTO user (key, value) VALUES (?, ?)`, ['streak', '12']);
-  },
 };

@@ -16,10 +16,9 @@ import {
   Alert,
 } from 'react-native';
 import { Colors } from '../constants/Colors';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTasksStore } from '@/stores/tasksStore';
+import { HabitsService } from '@/services/HabitsService';
 import { generateUUID } from '../utils';
-import { TasksService } from '@/services/TasksService';
+
 
 const C = Colors.dark;
 const S = Colors.spacing;
@@ -27,16 +26,14 @@ const R = Colors.radius;
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const ModalComponent = () => {
-  const toggleModal = useTasksStore((state) => state.toggleModal);
-  const [tasks, setTasks] = useState({
-    title: '',
-    due_date: '',
-    tag:''
+const HabitModalComponent = ({openState,closeModal}:any) => {
+  const [habit, setHabit] = useState({
+    id: '',
+    name: '',
+    occurence:''
   });
   
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   useEffect(() => {
@@ -49,7 +46,6 @@ const ModalComponent = () => {
     }).start();
   }, []);
 
-  const {loadAllTasks} = useTasksStore();
 
 
   const handleClose = () => {
@@ -59,50 +55,44 @@ const ModalComponent = () => {
       duration: 250,
       useNativeDriver: true,
     }).start(() => {
-      toggleModal();
+        closeModal(false)
     });
   };
 
-  const handleDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(false);
-    if (date) {
-      setSelectedDate(date);
-      setTasks({
-        ...tasks,
-        due_date: date.toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-        }),
-      });
-    }
-  };
+;
 
   const handleSave =async () => {
-   if (!tasks.due_date.trim() || !tasks.title.trim()) {
+   if (!habit.name.trim() || !habit.occurence.trim()) {
     Alert.alert('Missing Information', 'All fields are required', [
       { text: 'OK', onPress: () => {} }
     ]);
       return;
+    }else{
+        try {
+            const id = generateUUID()
+            habit.id = id;
+            await HabitsService.addHabits(habit)
+
+            setHabit({
+               id: '',
+                name: '',
+                occurence:''
+            })
+            handleClose()
+        } catch (error) {
+            console.log(error);
+            
+        }
     }
-    try {
-        const id = generateUUID();
-        await TasksService.addTask(id,tasks.title,tasks.tag,tasks.due_date)
-        loadAllTasks();
-    } catch (error) {
-        console.log(error);
-        
-    }
-    // Add your save logic here
-    handleClose();
+   
+    // Add  save logic here
   };
-const openModal = useTasksStore((state) => state.openModal);
   return (
     <Modal
       animationType="none"
       transparent={true}
-      visible={openModal}
-      onRequestClose={handleClose}
+      visible={openState}
+      onRequestClose={()=>closeModal(false)}
     >
      <View style={styles.overlay}>
         <KeyboardAvoidingView
@@ -113,7 +103,7 @@ const openModal = useTasksStore((state) => state.openModal);
          <View style={styles.handle} />
                 
                 <View style={styles.header}>
-                  <Text style={styles.headerTitle}>Add New Task</Text>
+                  <Text style={styles.headerTitle}>Add New Habit</Text>
                   <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                     <Text style={styles.closeButtonText}>✕</Text>
                   </TouchableOpacity>
@@ -121,55 +111,45 @@ const openModal = useTasksStore((state) => state.openModal);
                 <View style={styles.content}>
                   {/* Title Input */}
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Task Title *</Text>
+                    <Text style={styles.label}>Habit Title *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="What needs to be done?"
+                      placeholder="No coffee six hours before eleven"
                       placeholderTextColor={C.textDim}
-                      value={tasks.title}
-                      onChangeText={(text) => setTasks({ ...tasks, title: text })}
+                      value={habit.name}
+                      onChangeText={(text) => setHabit({ ...habit, name: text })}
                       autoFocus={true}
                       returnKeyType="next"
                       blurOnSubmit={false}
                     />
                   </View>
-                    {/* Due Date Picker */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Due Date</Text>
-                    <TouchableOpacity
-                      style={styles.dateButton}
-                      onPress={() => setShowDatePicker(true)}
-                    >
-                      <Text style={styles.dateButtonText}>
-                        {tasks.due_date || 'Select a date'}
-                      </Text>
-                    </TouchableOpacity>
-                    
-                    {showDatePicker && (
-                      <DateTimePicker
-                        value={selectedDate || new Date()}
-                        mode="date"
-                        display="default"
-                        onChange={handleDateChange}
-                        minimumDate={new Date()}
-                      />
-                    )}
-                  </View>
-                   {/* Tag Input */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Task tag </Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="work || dev || personal?"
-                      placeholderTextColor={C.textDim}
-                      value={tasks.tag}
-                      onChangeText={(text) => setTasks({ ...tasks, tag: text })}
-                      autoFocus={true}
-                      returnKeyType="next"
-                      blurOnSubmit={false}
-                    />
-                  </View>
-                        {/* Action Buttons */}
+                   
+                 {/* Frequency Selector */}
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Habit frequency *</Text>
+                      <View style={styles.frequencyContainer}>
+                        {['Daily', 'Weekly', 'Monthly'].map((option) => (
+                          <TouchableOpacity
+                            key={option}
+                            style={[
+                              styles.frequencyOption,
+                              habit.occurence === option && styles.frequencyOptionActive,
+                            ]}
+                            onPress={() => setHabit({ ...habit, occurence: option })}
+                          >
+                            <Text
+                              style={[
+                                styles.frequencyOptionText,
+                                habit.occurence === option && styles.frequencyOptionTextActive,
+                              ]}
+                            >
+                              {option}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                                            {/* Action Buttons */}
                   <View style={styles.buttonContainer}>
                     <TouchableOpacity
                       style={[styles.button, styles.cancelButton]}
@@ -182,7 +162,7 @@ const openModal = useTasksStore((state) => state.openModal);
                       style={[styles.button, styles.saveButton]}
                       onPress={handleSave}
                     >
-                      <Text style={styles.saveButtonText}>Save Task</Text>
+                      <Text style={styles.saveButtonText}>Save Habit</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -312,6 +292,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  frequencyContainer: {
+  flexDirection: 'row',
+  backgroundColor: C.background,
+  borderRadius: R.md,
+  borderWidth: 1,
+  borderColor: C.border,
+  padding: 4,
+  gap: 4,
+},
+frequencyOption: {
+  flex: 1,
+  paddingVertical: S.sm,
+  borderRadius: R.sm,
+  alignItems: 'center',
+},
+frequencyOptionActive: {
+  backgroundColor: C.primary,
+},
+frequencyOptionText: {
+  fontSize: 14,
+  color: C.textDim,
+},
+frequencyOptionTextActive: {
+  color: '#fff',
+  fontWeight: '500',
+},
 });
 
-export default ModalComponent;
+export default HabitModalComponent;

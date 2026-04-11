@@ -25,6 +25,8 @@ export const initDatabase = async (): Promise<void> => {
       title     TEXT NOT NULL,
       date      TEXT NOT NULL,
       time      TEXT,
+      recurrent  INTEGER DEFAULT 0,
+      reminder_time TEXT,
       category  TEXT NOT NULL DEFAULT 'Personal',
       completed INTEGER DEFAULT 0
     );
@@ -38,7 +40,7 @@ export const initDatabase = async (): Promise<void> => {
       completed_today INTEGER DEFAULT 0,
       start_date      INTEGER NOT NULL DEFAULT 0,
       frequency       TEXT DEFAULT 'daily',
-      frequency_config TEXT,
+      frequency_config TEXT, 
       target_count    INTEGER DEFAULT 1,
       reminder_time   TEXT,
       is_archived     INTEGER DEFAULT 0,

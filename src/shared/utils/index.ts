@@ -160,13 +160,13 @@ export const formatTimestamp = (timestamp: number): string => {
   const isAM = time.includes('am');
   return `${time} ${isAM ? 'am' : 'pm'}`;
 }
-const date = new Date();
+export const todayDate = new Date();
 // Helper function
 export const isToday = (date: any) => {
   
  
   
-  const today = new Date();
+   const today = new Date();
   const formattedToday = today.toLocaleDateString('en-US', { 
     weekday: 'short', 
     month: 'short', 
@@ -175,3 +175,39 @@ export const isToday = (date: any) => {
 
    return String(date) === String(formattedToday);
 };
+
+ export  const getDisplayDate = (currentDate:any) => {
+    const date = new Date(currentDate.year, currentDate.month);
+    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+  };
+export const weekdays = ["SUN","MON","TUE","WED","THUR","FRI","SAT"]
+
+export const generateMonth = (date:any)=>{
+ const days = []
+const firstDate = new Date(date.year,date.month,1)
+const lastDate = new Date(date.year,date.month+1,0)
+
+const firstDay = firstDate.getDay()
+const noDays = lastDate.getDate()
+
+for (let i =0;i < firstDay;i++){
+    days.push(0)
+    
+}
+for (let i=1;i<noDays + 1;i++){
+  days.push(i)
+}
+for (let i=0;i < 35 - noDays -firstDay ;i++){
+
+  days.push(0)
+}
+
+return days
+
+}
+
+export const returnIdx =(data:any,id:number,length:number)=>{
+      const idx = (id * length)/data.length
+      
+      return idx
+}

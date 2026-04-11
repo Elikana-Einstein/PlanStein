@@ -11,16 +11,19 @@ import { GoalsMiniGrid }   from './components/GoalsProgress';
 import { SkeletonLoader }  from '../../shared/components/SkeletonLoader';
 import { SectionHeader }   from '@/shared/components/SectionHeader';
 import { Colors } from '@/shared/constants/Colors';
+import { useMeData } from '../me/hooks/useMeData';
+import { useHabitStore } from '@/stores/habitsStore';
 
 const C = Colors.dark;
 const S = Colors.spacing;
 
 export const HomeScreen = () => {
+
+  const habits = useHabitStore().habits
   const {
     isLoading,
     error,
     tasks,
-    habits,
     goals,
     name,
     streak,
@@ -33,6 +36,7 @@ export const HomeScreen = () => {
     toggleHabit,
   } = useHomeData();
 
+const {profile} = useMeData();
   if (isLoading) return <SkeletonLoader />;
   if (error){
     console.log(error);
@@ -75,13 +79,13 @@ export const HomeScreen = () => {
       keyExtractor={(item) => item.key}
       renderItem={({ item }) => (
         <View>
-          <SectionHeader title={item.title} onSeeAll={() => {}} />
+          <SectionHeader title={item.title} onSeeAll={item.title} />
           {item.render()}
         </View>
       )}
       ListHeaderComponent={
         <>
-          <GreetingHeader name={name} />
+          <GreetingHeader name={profile?.name} />
           <FocusPrompt focusMinutes={focusMinutes} />
           <DayScoreCard
             score={score}

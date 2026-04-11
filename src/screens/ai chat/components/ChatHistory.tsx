@@ -6,8 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 
-export default function PreviousChatsScreen() {
-    const [chats, setChats] = React.useState<{ id: string; title: string }[]>([]);
+export default function PreviousChatsScreen() { 
+
+  const    chatsHis = useAIStore().chat_history
+  const    chati = useAIStore().chat_id
+    const [chats, setChats] = React.useState<{ id: string; title: string }[]>(chatsHis);
     React.useEffect(() => {
         const fetchChatHistory = async () => {
             try {           
@@ -19,7 +22,7 @@ export default function PreviousChatsScreen() {
             }
         };
         fetchChatHistory();
-    }, []);
+    }, [chati]);
     const  handleChatSelect = async (chatId: string) => {
            await AiService.getChatMessages(chatId);
         }

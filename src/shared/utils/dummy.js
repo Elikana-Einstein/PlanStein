@@ -151,3 +151,50 @@ export const goals = [
       hasAttachment: false
     }
   ]
+
+  export const mockHabits = [
+  {
+    id: "habit_001",
+    name: "Morning Meditation",
+    streak: 7,
+    completedToday: false,
+    lastSevenDays: [true, true, true, true, true, true, false],
+    frequency:'Weekly'
+  },
+  {
+    id: "habit_002",
+    name: "Drink 2L Water",
+    streak: 14,
+    completedToday: true,
+    lastSevenDays: [true, true, true, true, true, true, true],
+    frequency:'Daily'
+
+  },
+  {
+    id: "habit_003",
+    name: "Read for 30 minutes",
+    streak: 3,
+    completedToday: false,
+    lastSevenDays: [false, true, false, true, false, true, false],
+    frequency:'Daily'
+
+  },
+  {
+    id: "habit_004",
+    name: "Exercise - Long habit name that might wrap to next line",
+    streak: 21,
+    completedToday: true,
+    lastSevenDays: [true, true, true, true, true, true, true],
+    frequency:'Weekly'
+
+  },
+  {
+    id: "habit_005",
+    name: "Learn React Native",
+    streak: 1,
+    completedToday: false,
+    lastSevenDays: [true, false, false, false, false, false, false],
+    frequency:'Monthly'
+    
+  }
+];

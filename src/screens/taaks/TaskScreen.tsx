@@ -32,7 +32,7 @@ export const TasksScreen = () => {
     { id: 'all',      label: 'All'      },
     { id: 'today',    label: 'Today'    },
     { id: 'upcoming', label: 'Upcoming' },
-    { id: 'done',     label: 'Done'     },
+    { id: 'recurrent',     label: 'Recurrent'     },
   ];
 
 

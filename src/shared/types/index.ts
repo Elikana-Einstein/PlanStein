@@ -18,6 +18,7 @@ export interface Event {
   category:  EventCategory;
   completed: boolean;
   time?:     string;         // "14:00" — optional, events have times, tasks don't
+  recurrent?: boolean;    
 }
 
 export interface Habit {
@@ -27,6 +28,7 @@ export interface Habit {
   color?:         string;
   completedToday: boolean;
   lastSevenDays?: boolean[];
+  frequency: string
 }
 
 export interface Goal {

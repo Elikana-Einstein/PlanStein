@@ -21,7 +21,7 @@ module.exports = {
         muted: Colors.dark.textMuted,
         dim: Colors.dark.textDim,
         urgent: Colors.dark.error,
-        background: Colors.background,
+        //background: Colors.background,
         surface: Colors.surface,
        // primary: Colors.primary,
         secondary: Colors.secondary,

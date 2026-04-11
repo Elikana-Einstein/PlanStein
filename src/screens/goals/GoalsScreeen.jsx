@@ -5,6 +5,7 @@ import { FlatList, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { router } from 'expo-router';
 import { GoalsService } from '@/services/GoalsService';
 import { useGoalsStore } from '@/stores/goalsStore';
+import { Colors } from '@/shared/constants/Colors';
 
 
 //progress bar component
@@ -31,7 +32,6 @@ const SubgoalItem = ({ subgoal }) =>{
     }
     return(
   <View className="flex-row items-start mb-2 ml-2">
-    <View className="w-2 h-2 rounded-full bg-indigo-400 mt-1.5 mr-2  " />
     <TouchableOpacity onLongPress={()=>handlemarkAsComplete(subgoal.id)} className='flex flex-row gap-2 items-center'>
         <Ionicons name="checkmark-circle" size={14} color={subgoal.is_completed ? 'blue' : 'lightgray'} />
     <Text style={{  color: 'white' }} className={subgoal.is_completed ? 'line-through text-gray-500' : 'text-white'}>
@@ -47,9 +47,9 @@ const SubgoalItem = ({ subgoal }) =>{
 
 // Helper: render a single episode (week range + its subgoals)
 const EpisodeCard = ({ episode }) => (
-  <View className="bg-primary rounded-xl p-4 mb-3 shadow-sm border border-border">
+  <View style={{backgroundColor:Colors.dark.background,borderWidth:0.5,borderColor:Colors.dark.border}} className=" rounded-xl p-4 mb-3 shadow-sm border border-border">
     <View className="flex-row justify-between items-center mb-3">
-      <Text style={{ fontFamily: 'Inter-Bold', color: 'black' }} className="text-black font-bold text-base uppercase tracking-wide">
+      <Text style={{ fontFamily: 'Inter-Bold', color: 'gray' }} className="text-black font-bold text-base uppercase tracking-wide">
         {episode.title}
       </Text>
       <View className="bg-indigo-100 px-2 py-1 rounded-full">
@@ -113,7 +113,7 @@ const GoalCard = ({ goal }) =>{
     </View>
 
     {/* Episodes list */}
-    <View className="p-4 bg-gray-50">
+    <View style={{backgroundColor:Colors.dark.surface}} className="p-4 ">
       {goal.episodes.map((episode, idx) => (
         <EpisodeCard key={idx} episode={episode} />
       ))}
@@ -138,7 +138,7 @@ export default function GoalsScreeen() {
     const goals = useGoalsStore().goals;
     
   return (
-    <GestureHandlerRootView className="flex-1 bg-gray-100">
+    <GestureHandlerRootView className="flex-1 bg-red-100">
       <FlatList
         data={goals}
         keyExtractor={(item, index) => index.toString()}

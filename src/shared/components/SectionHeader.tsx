@@ -1,17 +1,29 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
+import { router } from 'expo-router';
 
 type Props = {
   title: string;
-  onSeeAll?: () => void;
+  onSeeAll?: string;
 };
 
 export const SectionHeader: React.FC<Props> = ({ title, onSeeAll }) => (
   <View style={styles.container}>
     <Text style={styles.title}>{title}</Text>
     {onSeeAll && (
-      <TouchableOpacity onPress={onSeeAll}>
+      <TouchableOpacity onPress={()=>{
+        switch (title) {
+          case "Habits":
+            router.push('/habits/HabitsScreen')
+            break;
+          case "Today":
+            router.push('/(tabs)/tasks')
+          
+          default:
+            break;
+        }
+      }}>
         <Text style={styles.seeAll}>See all</Text>
       </TouchableOpacity>
     )}

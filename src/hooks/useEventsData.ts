@@ -2,7 +2,7 @@ import { Event } from '@/shared/types';
 import { useEventsStore } from '@/stores/eventStore';
 import { useState, useMemo, useEffect } from 'react';
 
-type Filter = 'all' | 'today' | 'upcoming' | 'done';
+type Filter = 'all' | 'today' | 'upcoming' | 'recurrent';   
 
 export const useEventsData = () => {
   const { events, loadAllEvents, toggleEvent } = useEventsStore();
@@ -18,16 +18,16 @@ export const useEventsData = () => {
         return events.filter(e => e.date === 'Today' && !e.completed);
       case 'upcoming':
         return events.filter(e => e.date !== 'Today' && !e.completed);
-      case 'done':
-        return events.filter(e => e.completed);
+      case 'recurrent':
+        return events.filter(e => e.recurrent);
       default:
         return events;
     }
   }, [events, filter]);
 
   const groupedEvents = useMemo(() => {
-    if (filter === 'done') {
-      return [{ title: 'Completed', data: filteredEvents }];
+    if (filter === 'recurrent') {
+      return [{ title: 'Recurrent events', data: filteredEvents }];
     }
 
     // Group by date
