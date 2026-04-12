@@ -1,72 +1,92 @@
 import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native'
-import React from 'react'
+import React, { useEffect } from 'react'
 import AiService from '@/services/AiService';
 import { useAIStore } from '@/stores/useAiStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Colors } from '@/shared/constants/Colors';
 
+export default function PreviousChatsScreen() {
+  const chat_history = useAIStore((state) => state.chat_history);
+  const fetchChatHistory = useAIStore((state) => state.fetchChatHistroy);
+  const {set_chat_id}= useAIStore()
+  // load on mount
+  useEffect(() => {
+    fetchChatHistory();
+  }, []);
 
+  const handleChatSelect = async(chatId: string) => {
+    set_chat_id(chatId); // ← this triggers ChatContainer to reload
+    const messages = await AiService.getChatMessages(chatId);
+    useAIStore.getState().setChatHistory(messages);
+  };
 
-export default function PreviousChatsScreen() { 
-
-  const    chatsHis = useAIStore().chat_history
-  const    chati = useAIStore().chat_id
-    const [chats, setChats] = React.useState<{ id: string; title: string }[]>(chatsHis);
-    React.useEffect(() => {
-        const fetchChatHistory = async () => {
-            try {           
-                   
-              const history = await AiService.getChatHistory();
-                setChats(history as { id: string; title: string }[]);
-            } catch (error) {
-                console.error('Failed to fetch chat history:', error);
-            }
-        };
-        fetchChatHistory();
-    }, [chati]);
-    const  handleChatSelect = async (chatId: string) => {
-           await AiService.getChatMessages(chatId);
-        }
-    
-        const handleDeleteChat = async (chatId: string) => {
-          try {
-            Alert.alert(
-              'Delete Chat',
-              'Are you sure you want to delete this chat history?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: async () => {  
-
+  const handleDeleteChat = (chatId: string) => {
+    Alert.alert(
+      'Delete Chat',
+      'Are you sure you want to delete this chat?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
             await AiService.deleteChatHistory(chatId);
-            setChats((prev) => prev.filter((chat) => chat.id !== chatId));
-                } },
-              ]
-            );
-          } catch (error) {
-            console.error('Failed to delete chat history:', error);
-          }
-        };
+            fetchChatHistory(); // refresh from store
+            // if deleted chat was active, clear it
+            if (useAIStore.getState().chat_id === chatId) {
+              useAIStore.getState().set_chat_id('');
+              useAIStore.getState().setChatHistory([]);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAll = () => {
+    Alert.alert(
+      'Delete All Chats',
+      'Are you sure you want to delete all chat history?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete All',
+          style: 'destructive',
+          onPress: async () => {
+            await AiService.deleteAllChatHistory();
+            useAIStore.getState().set_chat_id('');
+            useAIStore.getState().setChatHistory([]);
+            fetchChatHistory();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, padding: 20 }}>
-      <View className='p-2 mb-4 border-b border-gray-300 rounded-lg bg-primary mt-4  items-center'>
-        <TouchableOpacity  onPress={() => Alert.alert('Delete All Chats', 'Are you sure you want to delete all chat history?', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete All', style: 'destructive', onPress: async () => {  
-            await AiService.deleteAllChatHistory();
-            setChats([]);
-          } },
-        ])}>
-          <Text style={{ color: 'red', fontWeight: 'bold',fontSize: 16 }}>Delete All Chats</Text>
+      <View style={{ marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderColor: '#333', alignItems: 'center' }}>
+        <TouchableOpacity onPress={handleDeleteAll}>
+          <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 16 }}>Delete All Chats</Text>
         </TouchableOpacity>
       </View>
+
       <FlatList
-        data={chats}
+        data={chat_history}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity style={{ paddingVertical: 10 }} onPress={() => handleChatSelect(item.id)} onLongPress={() => handleDeleteChat(item.id)}>
-            <Text style={{ fontSize: 16 }}>{item.title}</Text>
+          <TouchableOpacity
+            style={{ paddingVertical: 12, borderBottomWidth: 0.5, borderColor: '#222' }}
+            onPress={() => handleChatSelect(item.id)}
+            onLongPress={() => handleDeleteChat(item.id)}
+          >
+            <Text style={{ fontSize: 15, color: Colors.dark.textDim }}>{item.title}</Text>
           </TouchableOpacity>
         )}
+        ListEmptyComponent={
+          <Text style={{ color: '#555', textAlign: 'center', marginTop: 40 }}>No chats yet</Text>
+        }
       />
     </SafeAreaView>
-  )
+  );
 }

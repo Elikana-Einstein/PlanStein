@@ -38,7 +38,7 @@ export const initDatabase = async (): Promise<void> => {
       streak          INTEGER DEFAULT 0,
       color           TEXT,
       completed_today INTEGER DEFAULT 0,
-      start_date      INTEGER NOT NULL DEFAULT 0,
+      start_date      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       frequency       TEXT DEFAULT 'daily',
       frequency_config TEXT, 
       target_count    INTEGER DEFAULT 1,
@@ -51,11 +51,7 @@ export const initDatabase = async (): Promise<void> => {
     CREATE TABLE IF NOT EXISTS habit_logs (
       id         TEXT PRIMARY KEY,
       habit_id   TEXT NOT NULL REFERENCES habits(id),
-      date       TEXT NOT NULL,
-      count      INTEGER DEFAULT 1,
-      note       TEXT,
-      created_at INTEGER NOT NULL DEFAULT 0,
-      updated_at INTEGER NOT NULL DEFAULT 0
+      date       TEXT NOT NULL
     );
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_habit_log_date
@@ -176,6 +172,15 @@ CREATE TABLE IF NOT EXISTS messages (
   timestamp     INTEGER NOT NULL,
   has_attachment INTEGER DEFAULT 0,
   is_deleted    INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS chat_summaries (
+  id        TEXT PRIMARY KEY,
+  chat_id   TEXT NOT NULL UNIQUE,
+  summary   TEXT NOT NULL,
+  up_to_message_id TEXT,        -- last message that was summarised
+  created_at INTEGER,
+  updated_at INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_messages_chat_id

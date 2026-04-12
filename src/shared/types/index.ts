@@ -27,8 +27,9 @@ export interface Habit {
   streak:         number;
   color?:         string;
   completedToday: boolean;
-  lastSevenDays?: boolean[];
+  lastSevenDays?: (boolean | null)[];
   frequency: string
+  start_date:string
 }
 
 export interface Goal {

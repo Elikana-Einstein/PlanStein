@@ -153,13 +153,14 @@ export function shuffle<T>(arr: T[]): T[] {
 
 export const generateUUID = () => Crypto.randomUUID();
 export const getCurrentTimestamp = () => Date.now();
-
 export const formatTimestamp = (timestamp: number): string => {
   const date = new Date(timestamp);
-  const time = date.toLocaleString().slice(-5);
-  const isAM = time.includes('am');
-  return `${time} ${isAM ? 'am' : 'pm'}`;
-}
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12 || 12; // convert 0 to 12 for midnight
+  return `${hours}:${minutes} ${ampm}`;
+};
 export const todayDate = new Date();
 // Helper function
 export const isToday = (date: any) => {
@@ -211,3 +212,39 @@ export const returnIdx =(data:any,id:number,length:number)=>{
       
       return idx
 }
+
+export const getFormattedDate = () => {
+  const today = new Date();
+
+  return today.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+};
+
+export function formatDateForSql(value: Date | string): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+
+// shared/utils.ts
+export const estimateTokens = (text: string): number => {
+  return Math.ceil(text.length / 4);
+};
+
+export const estimateMessagesTokens = (
+  messages: { role: string; content: string }[]
+): number => {
+  return messages.reduce((total, m) => total + estimateTokens(m.content), 0);
+};
+// shared/utils.ts
+export const stripThinkingBlock = (text: string): string => {
+  return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+};

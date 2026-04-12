@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   Modal,
   View,
@@ -17,22 +18,30 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { HabitsService } from '@/services/HabitsService';
-import { generateUUID } from '../utils';
+import { formatDateForSql, generateUUID, getFormattedDate, todayDate } from '../utils';
 
 
 const C = Colors.dark;
 const S = Colors.spacing;
 const R = Colors.radius;
+interface habits{
+  id:string,
+  name:string,
+  occurence:string,
+  start_date:Date
+}
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const HabitModalComponent = ({openState,closeModal}:any) => {
-  const [habit, setHabit] = useState({
+  const [habit, setHabit] = useState<habits>({
     id: '',
     name: '',
-    occurence:''
+    occurence:'',
+    start_date:todayDate
+
   });
-  
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -55,6 +64,12 @@ const HabitModalComponent = ({openState,closeModal}:any) => {
       duration: 250,
       useNativeDriver: true,
     }).start(() => {
+       setHabit({
+               id: '',
+                name: '',
+                occurence:'',
+                start_date:todayDate
+            })
         closeModal(false)
     });
   };
@@ -62,12 +77,16 @@ const HabitModalComponent = ({openState,closeModal}:any) => {
 ;
 
   const handleSave =async () => {
-   if (!habit.name.trim() || !habit.occurence.trim()) {
-    Alert.alert('Missing Information', 'All fields are required', [
-      { text: 'OK', onPress: () => {} }
-    ]);
-      return;
+        if (!habit.name.trim() || !habit.occurence.trim() || !habit.start_date) {
+        Alert.alert('Missing Information', 'All fields are required', [
+          { text: 'OK', onPress: () => {} }
+        ]);
+        return;
+
+       
+
     }else{
+      
         try {
             const id = generateUUID()
             habit.id = id;
@@ -76,7 +95,8 @@ const HabitModalComponent = ({openState,closeModal}:any) => {
             setHabit({
                id: '',
                 name: '',
-                occurence:''
+                occurence:'',
+                start_date:todayDate
             })
             handleClose()
         } catch (error) {
@@ -149,6 +169,40 @@ const HabitModalComponent = ({openState,closeModal}:any) => {
                         ))}
                       </View>
                     </View>
+                     {/* Start date picker */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Start date</Text>
+                        <TouchableOpacity
+                          style={styles.dateButton}
+                          onPress={() => setShowDatePicker(true)}
+                        >
+                          <Text style={[
+                            styles.dateButtonText,
+                            habit.start_date ? { color: C.text } : {}
+                          ]}>
+                            {habit.start_date
+                              ? new Date(habit.start_date).toLocaleDateString('en-GB', {
+                                  day: 'numeric', month: 'long', year: 'numeric'
+                                })
+                              : 'Select a start date'}
+                          </Text>
+                        </TouchableOpacity>
+                              
+                        {showDatePicker && (
+                          <DateTimePicker
+                            value={habit.start_date ? new Date(habit.start_date) : new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                            minimumDate={new Date()}
+                            onChange={(event, date) => {
+                              setShowDatePicker(Platform.OS === 'ios');
+                              if (event.type === 'set' && date) {
+                                setHabit({ ...habit, start_date: date });
+                              }
+                            }}
+                          />
+                        )}
+                      </View>
                                             {/* Action Buttons */}
                   <View style={styles.buttonContainer}>
                     <TouchableOpacity
@@ -165,6 +219,7 @@ const HabitModalComponent = ({openState,closeModal}:any) => {
                       <Text style={styles.saveButtonText}>Save Habit</Text>
                     </TouchableOpacity>
                   </View>
+                 
                 </View>
          
         

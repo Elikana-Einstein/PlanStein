@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Habit } from '@/shared/types/index';
 import { Colors } from '@/shared/constants/Colors';
 import { router } from 'expo-router';
 import { mockHabits } from '@/shared/utils/dummy';
 import HabitsCard from '@/shared/components/HabitsCard';
+import { HabitsService } from '@/services/HabitsService';
 
 const C = Colors.dark;
 const S = Colors.spacing;
@@ -52,7 +53,16 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habit, accentColor, onTogg
   const badgeStyle = habit.completedToday
     ? { bg: `${accentColor}18`, border: `${accentColor}40`, text: accentColor }
     : { bg: C.surfaceLight,     border: C.border,           text: C.textDim   };
+    const [isDoneToday, setIsDoneToday] = useState(false);
 
+    useEffect(() => {
+      const check = async () => {
+        const result = await HabitsService.checkTodaysHabitAsAchieved(habit.id);
+        setIsDoneToday(result);
+      };
+    
+      check();
+    }, [habit.id]);
   return (
     <TouchableOpacity
       style={styles.card}
@@ -77,7 +87,7 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habit, accentColor, onTogg
             style={[
               styles.dot,
               done
-                ? { backgroundColor: accentColor }
+                ? { backgroundColor: C.error }
                 : styles.dotInactive,
             ]}
           />
@@ -90,7 +100,7 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habit, accentColor, onTogg
         { backgroundColor: badgeStyle.bg, borderColor: badgeStyle.border },
       ]}>
         <Text style={[styles.badgeText, { color: badgeStyle.text }]}>
-          {habit.completedToday ? 'Done today' : 'Pending'}
+          { isDoneToday?'Done today' : 'Pending'}
         </Text>
       </View>
     </TouchableOpacity>
