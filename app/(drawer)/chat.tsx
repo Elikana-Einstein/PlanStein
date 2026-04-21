@@ -1,5 +1,5 @@
 import React from 'react'
-import ChatScreenLayout from 'app/(drawer)/ChatScreenLayout'
+import ChatScreenLayout from './ChatScreenLayout'
 
 export default function chat() {
   return (

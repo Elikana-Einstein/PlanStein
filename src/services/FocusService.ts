@@ -4,20 +4,7 @@ import { generateId } from '@/shared/utils';
 
 export const FocusService = {
 
-  initTable: async (): Promise<void> => {
-    await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS focus_sessions (
-        id           TEXT PRIMARY KEY,
-        started_at   INTEGER NOT NULL,
-        ended_at     INTEGER NOT NULL,
-        duration_mins INTEGER NOT NULL,
-        phase        TEXT NOT NULL,
-        mode         TEXT NOT NULL,
-        was_completed INTEGER DEFAULT 0,
-        track_id     TEXT
-      );
-    `);
-  },
+
 
   saveSession: async (session: Omit<FocusSession, 'id'>): Promise<void> => {
     await db.runAsync(

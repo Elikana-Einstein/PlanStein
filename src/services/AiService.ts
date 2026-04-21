@@ -7,7 +7,7 @@ export interface chatRow {
 }
 export interface getChatidResult {
   chat_id: string;
-}
+} 
 
 const AiService = { 
 

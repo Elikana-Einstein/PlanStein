@@ -133,7 +133,7 @@ export interface WeeklyReview {
 }
 
 export interface MeStats {
-  todayTasks:    number;
+  todayTasks:    { total: number; done: number };
   todayHabits:   number;
   todayHabitsTotal: number;
   todayFocusMins: number;
@@ -225,4 +225,50 @@ export interface MessageInput {
   chatId: string;
   content:string;
   attachment?:Attachment[];
+}
+
+export type BookStatus = 'processing' | 'ready' | 'reading' | 'finished';
+
+export type UploadSource = 'device' | 'drive' | 'dropbox' | 'url';
+
+export interface Book {
+  id:           string;
+  title:        string;
+  author:       string;
+  coverColor:   string;        // gradient start color
+  originalPages: number;
+  distilledPages: number;
+  readTimeMinutes: number;
+  status:       BookStatus;
+  progress:     number;        // 0–100
+  currentPage:  number;
+  createdAt:    number;
+  updatedAt:    number;
+}
+
+export interface BookPage {
+  id:           string;
+  bookId:       string;
+  pageNumber:   number;
+  chapterTitle: string;
+  lessonTitle:  string;
+  content:      string;
+  highlight:    string;        // key quote pulled out
+  createdAt:    number;
+}
+
+export interface BookLesson {
+  id:       string;
+  bookId:   string;
+  order:    number;
+  title:    string;
+}
+
+export interface BookRecommendation {
+  id:          string;
+  title:       string;
+  author:      string;
+  coverColor:  string;
+  matchScore:  number;         // 0–100
+  reason:      string;         // why AI recommends it
 }

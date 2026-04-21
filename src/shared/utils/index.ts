@@ -248,3 +248,12 @@ export const estimateMessagesTokens = (
 export const stripThinkingBlock = (text: string): string => {
   return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 };
+
+export const todayInString = ()=>{
+  const today = new Date().toLocaleDateString('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+});
+return today;
+}

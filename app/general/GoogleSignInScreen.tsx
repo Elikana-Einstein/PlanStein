@@ -55,10 +55,10 @@ export default function GoogleSignInScreen() {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      const userInfo = await GoogleSignin.signIn();
-      console.log('User Info:', userInfo);
-      const tokens = await GoogleSignin.getTokens();
-      console.log('Tokens:', tokens);
+      //const userInfo = await GoogleSignin.signIn();
+      //console.log('User Info:', userInfo);
+      //const tokens = await GoogleSignin.getTokens();
+      //console.log('Tokens:', tokens);
       router.replace('/ai/email');
     } catch (error: any) {
       console.log('Google Sign-In Error:', error);

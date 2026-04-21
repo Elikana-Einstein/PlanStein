@@ -1,6 +1,6 @@
 import { db }           from '@/db/database';
 import { UserProfile, WeeklyReview, MeStats } from '../shared/types';
-import { startOfDayMs, todayString } from '@/shared/utils';
+import { formatDateForSql, getFormattedDate, startOfDayMs, todayInString, todayString } from '@/shared/utils';
 //import { startOfDayMs, todayString }           from '@shared/utils';
 
 export const MeService = {
@@ -10,6 +10,7 @@ export const MeService = {
   // ─── Profile ──────────────────────────────────────────────────────────────
 
   getProfile: async (): Promise<UserProfile> => {
+
     const rows = await db.getAllAsync(
       `SELECT key, value FROM user_profile WHERE key IN ('name','member_since')`
     );
@@ -59,21 +60,33 @@ export const MeService = {
 
     // Today tasks
     const taskRows = await db.getAllAsync(
-      `SELECT COUNT(*) as total,
-              SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as done
-       FROM tasks
-       WHERE due_date = 'Today' AND is_deleted = 0`
+       `SELECT COUNT(*) as total,
+               SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as done
+        FROM tasks
+        WHERE due_date = ? AND is_deleted = 0`,
+       [todayInString()]
     ) as { total: number; done: number }[];
-    const todayTasks = taskRows[0]?.done ?? 0;
+    const row = taskRows[0] ?? { total: 0, done: 0 };
+    const todayTasks = {
+          total: row.total,
+          done: row.done};
+    
 
     // Today habits
     const habitRows = await db.getAllAsync(
       `SELECT COUNT(*) as total FROM habits WHERE is_deleted = 0`
     ) as { total: number }[];
+ 
+ 
+
+    // completed habits today
     const habitLogRows = await db.getAllAsync(
-      `SELECT COUNT(*) as done FROM habit_logs WHERE date = ?`,
-      [todayString()]
+      `SELECT COUNT(*) as done
+       FROM habit_logs
+       WHERE date = ?`,
+      [formatDateForSql(new Date())]
     ) as { done: number }[];
+    
     const todayHabitsTotal = habitRows[0]?.total ?? 0;
     const todayHabits      = habitLogRows[0]?.done ?? 0;
 

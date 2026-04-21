@@ -31,11 +31,16 @@ export default function RootLayout() {
         <Stack.Screen name="ai/coach"      options={{ headerShown: false }} />
         <Stack.Screen name="ai/breakdown"  options={{ headerShown: false }} />
         <Stack.Screen name="ai/email"      options={{ headerShown: false }} />
-        <Stack.Screen name="ai/bedtime"    options={{ headerShown: false }} />
+        <Stack.Screen name="ai/bookSummarizer"    options={{ headerShown: false }} />
         <Stack.Screen name="ai/focusmix"   options={{ headerShown: false }} />
         <Stack.Screen name="general/AddGoalScreen"     options={{ headerShown: false }} />
         <Stack.Screen name="general/GoogleSignInScreen"     options={{ headerShown: false }} />
         <Stack.Screen name="habits/HabitsScreen"     options={{ headerShown: false }} />
+         <Stack.Screen name="books/booksScreen"      options={{ headerShown: false }} />
+  <Stack.Screen name="books/upload"     options={{ headerShown: false }} />
+  <Stack.Screen name="books/processing" options={{ headerShown: false }} />
+  <Stack.Screen name="books/[id]"       options={{ headerShown: false }} />
+  <Stack.Screen name="books/[id]/read"  options={{ headerShown: false }} />
         </Stack>
   );
 }

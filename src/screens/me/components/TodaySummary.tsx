@@ -12,7 +12,7 @@ type Props = { stats: MeStats };
 export const TodaySummary: React.FC<Props> = ({ stats }) => {
   const cells = [
     {
-      value: `${stats.todayTasks}`,
+      value: `${stats.todayTasks.done}/${stats.todayTasks.total}`,
       label: 'Tasks',
       color: C.primary,
     },

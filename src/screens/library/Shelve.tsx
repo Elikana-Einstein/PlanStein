@@ -1,10 +1,10 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-export default function bedtime() {
+export default function Shelve() {
   return (
     <View>
-      <Text>bedtime</Text>
+      <Text>Shelve</Text>
     </View>
   )
 }

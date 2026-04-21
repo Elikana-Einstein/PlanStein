@@ -1,6 +1,5 @@
 import { create }        from 'zustand';
 import { DailyBrief, MeStats }    from '../shared/types';
-import AiService from '@/services/AiService';
 import { MODELS } from '@/shared/constants/models';
 
 interface Message {
@@ -44,8 +43,8 @@ export const useAIStore = create<ChatState>((set,get) => ({
   setChatHistory: ( messages: Message[]) => set({ chats: messages }),
   //setChatTitleHistory: ( titles: Chat[]) => set({ chat_history: titles }),
   fetchChatHistroy:async()=>{
-     const history = await AiService.getChatHistory() as Chat[];
-      set({ chat_history: history });
+     //const history = await AiService.getChatHistory() as Chat[];
+      //set({ chat_history: history });
   },
   
 

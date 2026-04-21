@@ -8,6 +8,44 @@ export const initDatabase = async (): Promise<void> => {
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
 
+    -- ─── Books ────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS books (
+  id               TEXT PRIMARY KEY,
+  title            TEXT NOT NULL,
+  author           TEXT NOT NULL DEFAULT 'Unknown',
+  cover_color      TEXT NOT NULL DEFAULT '#1a1030',
+  original_pages   INTEGER DEFAULT 0,
+  distilled_pages  INTEGER DEFAULT 0,
+  read_time_mins   INTEGER DEFAULT 0,
+  status           TEXT NOT NULL DEFAULT 'processing'
+                   CHECK(status IN ('processing','ready','reading','finished')),
+  progress         INTEGER DEFAULT 0,
+  current_page     INTEGER DEFAULT 1,
+  created_at       INTEGER NOT NULL,
+  updated_at       INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS book_pages (
+  id            TEXT PRIMARY KEY,
+  book_id       TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  page_number   INTEGER NOT NULL,
+  chapter_title TEXT NOT NULL DEFAULT '',
+  lesson_title  TEXT NOT NULL DEFAULT '',
+  content       TEXT NOT NULL DEFAULT '',
+  highlight     TEXT NOT NULL DEFAULT '',
+  created_at    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_book_pages
+  ON book_pages(book_id, page_number);
+
+CREATE TABLE IF NOT EXISTS book_lessons (
+  id      TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  ord     INTEGER NOT NULL,
+  title   TEXT NOT NULL
+);
+
     -- ─── Tasks ────────────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS tasks (
       id         TEXT PRIMARY KEY,
@@ -227,6 +265,9 @@ export const dropAllTables = async (): Promise<void> => {
     DROP TABLE IF EXISTS weekly_reviews;
     DROP TABLE IF EXISTS achievements;
     DROP TABLE IF EXISTS user;
+    DROP TABLE IF EXISTS book_lessons;
+    DROP TABLE IF EXISTS book_pages;
+    DROP TABLE IF EXISTS books;
   `);
 };
 

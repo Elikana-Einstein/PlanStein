@@ -74,8 +74,8 @@ export const AIScreen: React.FC = () => {
 
   const wellbeingFeatures: FeatureCardConfig[] = [
     {
-      id:          'bedtime',
-      title:       'Bedtime story',
+      id:          'library',
+      title:       'AI library',
       description: '5 min AI story before sleep',
       accentColor: '#b37feb',
       icon: (
@@ -99,7 +99,7 @@ export const AIScreen: React.FC = () => {
       case 'coach':     router.push('/ai/coach');     break;
       case 'breakdown': router.push('/ai/breakdown'); break;
       case 'email':     router.push('/ai/email');     break;
-      case 'bedtime':   router.push('/ai/bedtime');   break;
+      case 'library':   router.push('/books/booksScreen');   break;
       case 'focusmix':  router.push('/ai/focusmix');  break;
     }
   };
