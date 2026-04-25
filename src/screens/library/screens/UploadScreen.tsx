@@ -15,7 +15,7 @@ const R = Colors.radius;
 
 export const UploadScreen: React.FC = () => {
   const router = useRouter();
-  const { uploadBook, processingStep } = useBooksStore();
+  const { uploadBook, processingStep, error } = useBooksStore();
   const [urlInput, setUrlInput] = useState('');
   const [showUrl,  setShowUrl]  = useState(false);
 
@@ -26,14 +26,16 @@ export const UploadScreen: React.FC = () => {
   const handleDevice = async () => {
     await uploadBook('device');
     if (useBooksStore.getState().processingStep === 'done') {
-      router.replace('/books');
+      router.replace('/books/booksScreen');
     }
   };
 
   const handleUrl = async () => {
     if (!urlInput.trim()) return;
     await uploadBook('url', urlInput.trim());
-    router.replace('/books');
+    if (useBooksStore.getState().processingStep === 'done') {
+      router.replace('/books/booksScreen');
+    }
   };
 
   return (
@@ -58,6 +60,12 @@ export const UploadScreen: React.FC = () => {
           AI extracts the key lessons and stories into a short distilled version you can actually finish.
         </Text>
       </View>
+
+      {error ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
       {/* Drop zone */}
       <TouchableOpacity
@@ -168,4 +176,6 @@ const styles = StyleSheet.create({
   optSub:   { fontSize: 9,  color: C.textDim },
 
   privacy: { fontSize: 10, color: C.textDim, textAlign: 'center' },
+  errorBox: { backgroundColor: '#4d1010', borderRadius: R.md, padding: S.sm, marginBottom: S.md },
+  errorText: { color: '#ffb3b3', fontSize: 12, lineHeight: 18 },
 });

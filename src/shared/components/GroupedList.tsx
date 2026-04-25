@@ -4,18 +4,20 @@ import { Ionicons as IonIcons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTasksStore } from '@/stores/tasksStore';
 import ModalComponent from './ModalComponent';
+import EventModalComponent from './EventModal';
 
 const C = Colors.dark;
 const S = Colors.spacing;
 const R = Colors.radius;
 
-type Section<T> = { title: string; data: T[] };
+type Section<T> = { title: string; data: T[],section:String };
 
 type Props<T> = {
   sections:      Section<T>[];
   renderItem:    (item: T, index: number) => React.ReactElement;
   keyExtractor?: (item: T, index: number) => string;
   emptyMessage?: string;
+  section?: string;
 };
 const ButtonComponent = ()=>{
   const openModal = useTasksStore((state) => state.openModal);
@@ -27,7 +29,7 @@ const ButtonComponent = ()=>{
     }
   }
   return(
-     <View style={{ position: 'absolute', bottom: S.lg, right: S.lg ,backgroundColor: C.surface, padding: S.sm, borderRadius: 999,borderBlockColor:C.border, borderWidth:1}}>
+     <View style={{ position: 'absolute', bottom: 90, right: S.lg ,backgroundColor: C.surface, padding: S.sm, borderRadius: 999,borderBlockColor:C.border, borderWidth:1}}>
       <TouchableOpacity onPress={handlePress}>
         <IonIcons name="add" size={24} color={C.primary} />
       </TouchableOpacity>
@@ -41,50 +43,47 @@ export function GroupedList<T>({
   renderItem,
   keyExtractor,
   emptyMessage = 'Nothing here yet',
+  section
 }: Props<T>) {
-  // All sections empty
-  const isEmpty = sections.every(s => s.data.length === 0);
+  const visibleSections = sections.filter(s => s.data.length > 0);
+  const isEmpty = visibleSections.length === 0;
   const openModal = useTasksStore((state) => state.openModal);
-  if (isEmpty) {
 
+  if (isEmpty) {
     return (
       <View style={styles.empty}>
-
-      <View >
-        <Text style={styles.emptyText}>{emptyMessage}</Text>
+        <View>
+          <Text style={styles.emptyText}>{emptyMessage}</Text>
+        </View>
+        {openModal && <ModalComponent />}
+        <ButtonComponent />
       </View>
-      {openModal && <ModalComponent />}
-      <ButtonComponent />
-      </View>
-
     );
   }
 
   return (
     <View>
-
-    <FlatList
-      data={sections}
-      keyExtractor={(item, index) => item.title + index}
-      renderItem={({ item: section }) => (
-        <View>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
+      <FlatList
+        data={visibleSections}
+        keyExtractor={(item, index) => item.title + index}
+        renderItem={({ item: section }) => (
+          <View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+            </View>
+            {section.data.map((item, idx) => (
+              <React.Fragment key={keyExtractor ? keyExtractor(item, idx) : String(idx)}>
+                {renderItem(item, idx)}
+              </React.Fragment>
+            ))}
           </View>
-          {section.data.map((item, idx) => (
-            <React.Fragment key={keyExtractor ? keyExtractor(item, idx) : String(idx)}>
-              {renderItem(item, idx)}
-            </React.Fragment>
-          ))}
-        </View>
-      )}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.content}
-    />
-    {openModal && <ModalComponent />}
-    <ButtonComponent />
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      />
+      {openModal && section === 'task' ? <ModalComponent /> : <EventModalComponent />}
+      <ButtonComponent />
     </View>
-
   );
 }
 

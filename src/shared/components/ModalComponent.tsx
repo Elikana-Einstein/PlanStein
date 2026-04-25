@@ -78,22 +78,20 @@ const ModalComponent = () => {
     }
   };
 
-  const handleSave =async () => {
-   if (!tasks.due_date.trim() || !tasks.title.trim()) {
-    Alert.alert('Missing Information', 'All fields are required', [
-      { text: 'OK', onPress: () => {} }
-    ]);
+  const handleSave = async () => {
+    if (!tasks.title.trim()) {
+      Alert.alert('Missing Information', 'Task title is required.', [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
     try {
-        const id = generateUUID();
-        await TasksService.addTask(id,tasks.title,tasks.tag,tasks.due_date)
-        loadAllTasks();
+      const id = generateUUID();
+      await TasksService.addTask(id, tasks.title, tasks.tag, tasks.due_date);
+      loadAllTasks();
     } catch (error) {
-        console.log(error);
-        
+      console.log(error);
     }
-    // Add your save logic here
     handleClose();
   };
 const openModal = useTasksStore((state) => state.openModal);
@@ -135,7 +133,7 @@ const openModal = useTasksStore((state) => state.openModal);
                   </View>
                     {/* Due Date Picker */}
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Due Date</Text>
+                    <Text style={styles.label}>Due Date (optional)</Text>
                     <TouchableOpacity
                       style={styles.dateButton}
                       onPress={() => setShowDatePicker(true)}
@@ -157,14 +155,13 @@ const openModal = useTasksStore((state) => state.openModal);
                   </View>
                    {/* Tag Input */}
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Task tag </Text>
+                    <Text style={styles.label}>Task tag</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="work || dev || personal?"
+                      placeholder="Work, Dev, Personal, Health"
                       placeholderTextColor={C.textDim}
                       value={tasks.tag}
                       onChangeText={(text) => setTasks({ ...tasks, tag: text })}
-                      autoFocus={true}
                       returnKeyType="next"
                       blurOnSubmit={false}
                     />

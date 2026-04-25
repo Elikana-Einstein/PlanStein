@@ -15,9 +15,10 @@ export const TasksList: React.FC<Props> = ({ groupedTasks, onToggleTask }) => {
 
   return (
     <GroupedList
-      sections={groupedTasks}
+      sections={groupedTasks.map(group => ({ ...group, section: 'task' }))}
       renderItem={renderItem}
       keyExtractor={(task) => task.id}
+      section = 'task'
     />
   );
 };

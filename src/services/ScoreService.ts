@@ -5,6 +5,8 @@ export const ScoreService = {
     const tasksDone = tasks.filter(t => t.completed).length;
     const habitsDone = habits.filter(h => h.completedToday).length;
     const total = tasksDone * 10 + habitsDone * 5; // example scoring
+
+    
     return {
       total,
       delta: 8, // placeholder; could be computed from yesterday
@@ -13,4 +15,4 @@ export const ScoreService = {
       focusMinutes: 45, // placeholder
     };
   },
-};
+}; 

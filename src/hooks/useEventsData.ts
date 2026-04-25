@@ -39,7 +39,9 @@ export const useEventsData = () => {
     });
     // Order: Today, Tomorrow, This week...
     const order = ['Today', 'Tomorrow', 'This week'];
-    return order.map(key => ({ title: key, data: groups[key] || [] }));
+    return order
+      .map(key => ({ title: key, data: groups[key] || [] }))
+      .filter(group => group.data.length > 0);
   }, [filteredEvents, filter]);
 
   return {

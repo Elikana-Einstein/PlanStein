@@ -58,18 +58,21 @@ export const MeService = {
     const weekStart      = today - 6 * 86_400_000;
     const monthStart     = today - 27 * 86_400_000;
 
-    // Today tasks
+    //
     const taskRows = await db.getAllAsync(
-       `SELECT COUNT(*) as total,
-               SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as done
-        FROM tasks
-        WHERE due_date = ? AND is_deleted = 0`,
-       [todayInString()]
+      `SELECT COUNT(*) as total,
+              COALESCE(SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END), 0) as done
+       FROM tasks
+       WHERE due_date = ? AND is_deleted = 0`,
+      [todayInString()]
     ) as { total: number; done: number }[];
+
     const row = taskRows[0] ?? { total: 0, done: 0 };
+
     const todayTasks = {
-          total: row.total,
-          done: row.done};
+      total: row.total,
+      done: row.done
+    };
     
 
     // Today habits

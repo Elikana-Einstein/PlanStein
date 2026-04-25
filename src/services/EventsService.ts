@@ -21,21 +21,31 @@ export const EventsService = {
       [completed ? 1 : 0, id]
     );
   },
+addEvent: async (event: {
+            id: string;
+            title: string;
+            date: string;
+            time: string | null;
+            recurrent: number;
+            reminder_time: string | null;
+            category: string;
+            completed: number;
+                        })          : Promise<void> => {
+            await db.runAsync(
+              `INSERT INTO events (id, title, date, time, recurrent, reminder_time, category, completed)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                event.id,
+                event.title,
+                event.date,
+                event.time,
+                event.recurrent,
+                event.reminder_time,
+                event.category,
+                event.completed,
+              ]
+            );
+          },          
 
-  seedMockEvents: async (): Promise<void> => {
-    const mockEvents: Event[] = [
-      { id: '1', title: 'Team meeting',       date: 'Today',    time: '09:00 AM', category: 'Work',     completed: false },
-      { id: '2', title: 'Doctor appointment', date: 'Tomorrow', time: '02:30 PM', category: 'Personal', completed: false },
-      { id: '3', title: 'Code review',        date: 'Today',    time: '11:00 AM', category: 'Dev',      completed: false },
-    ];
-    for (const event of mockEvents) {
-      await db.runAsync(
-        `INSERT OR REPLACE INTO events
-           (id, title, date, time, category, completed)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [event.id, event.title, event.date, event.time ?? null,
-         event.category, event.completed ? 1 : 0]
-      );
-    }
-  },
+ 
 };

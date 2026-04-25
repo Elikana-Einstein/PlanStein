@@ -12,14 +12,12 @@ import { SkeletonLoader }  from '../../shared/components/SkeletonLoader';
 import { SectionHeader }   from '@/shared/components/SectionHeader';
 import { Colors } from '@/shared/constants/Colors';
 import { useMeData } from '../me/hooks/useMeData';
-import { useHabitStore } from '@/stores/habitsStore';
 
 const C = Colors.dark;
 const S = Colors.spacing;
 
 export const HomeScreen = () => {
 
-  const habits = useHabitStore().habits
   const {
     isLoading,
     error,
@@ -30,10 +28,13 @@ export const HomeScreen = () => {
     score,
     delta,
     tasksDue,
+    tasksCompleted,
     habitsDone,
+    habitsTotal,
     focusMinutes,
     toggleTask,
     toggleHabit,
+    habits,
   } = useHomeData();
 
 const {profile} = useMeData();
@@ -50,7 +51,7 @@ const {profile} = useMeData();
 
   // ← built right here from values you already have
   const breakdown = {
-    tasksCompleted:  tasksDue,
+    tasksCompleted:  tasksCompleted,
     habitsCompleted: habitsDone,
     focusMinutes:    focusMinutes,
   };
@@ -85,7 +86,7 @@ const {profile} = useMeData();
       )}
       ListHeaderComponent={
         <>
-          <GreetingHeader name={profile?.name} />
+          <GreetingHeader name={profile?.name ?? name} />
           <FocusPrompt focusMinutes={focusMinutes} />
           <DayScoreCard
             score={score}
@@ -95,7 +96,7 @@ const {profile} = useMeData();
           <QuickStatsRow
             tasksDue={tasksDue}
             habitsDone={habitsDone}
-            habitsTotal={habits.length}
+            habitsTotal={habitsTotal}
             streak={streak}
           />
         </>

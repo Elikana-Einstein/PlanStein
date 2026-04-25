@@ -7,6 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useRouter }    from 'expo-router';
 import { Colors } from '@/shared/constants/Colors';
+import '@/config/googleConfig';
+import { EmailService } from '@/services/EmailService';
 
 const C = Colors.dark;
 const S = Colors.spacing;
@@ -55,10 +57,17 @@ export default function GoogleSignInScreen() {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      //const userInfo = await GoogleSignin.signIn();
-      //console.log('User Info:', userInfo);
-      //const tokens = await GoogleSignin.getTokens();
-      //console.log('Tokens:', tokens);
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const userInfo = await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+      const accessToken = tokens.accessToken;
+
+      if (!accessToken) {
+        throw new Error('Unable to retrieve Google access token.');
+      }
+
+      EmailService.setAccessToken(accessToken);
+      console.log('Google user signed in', userInfo);
       router.replace('/ai/email');
     } catch (error: any) {
       console.log('Google Sign-In Error:', error);

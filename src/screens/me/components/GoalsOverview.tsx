@@ -12,7 +12,7 @@ const GOAL_COLORS = [C.primary, C.secondary, C.accent, C.success];
 
 type Props = { goals: Goal[] };
 
-export const GoalsOverview: React.FC<Props> = ({ goals }) => {
+export const  GoalsOverview: React.FC<Props> = ({ goals }) => {
   const router  = useRouter();
   const visible = goals.slice(0, 3);
 
@@ -28,8 +28,8 @@ export const GoalsOverview: React.FC<Props> = ({ goals }) => {
     <View style={styles.card}>
       {visible.map((goal, i) => {
         const color    = goal.color ?? GOAL_COLORS[i % GOAL_COLORS.length];
-        const progress = Math.min(goal.progress / goal.target, 1);
-        const pct      = Math.round(progress * 100);
+        const progress = goal.progress?? 0;
+        const pct      = Math.round(progress);
 
         return (
           <View

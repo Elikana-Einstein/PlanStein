@@ -16,11 +16,15 @@ import { HabitsPreview } from './components/HabitsPreview';
 import { GoalsOverview } from './components/GoalsOverview';
 import { WeeklyReviewCard } from './components/WeeklyReviewCard';
 import { AchievementsRow } from './components/AchievementsRow';
+import { useHabitsStore } from '@/stores/useHabitsStore';
+import { useHomeData } from '@/hooks/useHomeData';
 
 const C = Colors.dark;
 const S = Colors.spacing;
 
 export const MeScreen: React.FC = () => {
+    const habits = useHabitsStore().habits
+    const {goals} = useHomeData();
   const router = useRouter();
   const {
     profile, stats, weeklyReview,
@@ -83,9 +87,9 @@ export const MeScreen: React.FC = () => {
         <SectionHeader
           title="Habits"
           actionLabel="Manage →"
-          onAction={() => router.push('/habits')}
+          onAction={() => router.push('/habits/HabitsScreen')} ///here 
         />
-        <HabitsPreview habits={[]} />
+        <HabitsPreview habits={habits} />
 
         {/* Goals */}
         <SectionHeader
@@ -93,7 +97,7 @@ export const MeScreen: React.FC = () => {
           actionLabel="See all"
           onAction={() => {}}
         />
-        <GoalsOverview goals={[]} />
+        <GoalsOverview goals={goals} />
 
         {/* Weekly review */}
         <SectionHeader title="Weekly review" />

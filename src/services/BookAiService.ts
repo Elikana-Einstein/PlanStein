@@ -9,9 +9,19 @@ async function callClaude(
   user:      string,
   maxTokens: number = 4000,
 ): Promise<string> {
+  const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      'Missing Anthropic API key. Add EXPO_PUBLIC_ANTHROPIC_API_KEY to your environment.',
+    );
+  }
+
   const res = await fetch(API_URL, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
     body: JSON.stringify({
       model:      MODEL,
       max_tokens: maxTokens,

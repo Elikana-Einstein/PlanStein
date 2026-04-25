@@ -77,6 +77,8 @@ const NoGoals = () => (
 
 
 const GoalCard = ({ goal }) =>{
+    const { loadActiveGoals } = useGoalsStore();
+
     const handleGoalDelete = async (goalId) => {
         try {
            Alert.alert(
@@ -86,6 +88,7 @@ const GoalCard = ({ goal }) =>{
                   { text: "Cancel", style: "cancel" },
                   { text: "Delete", style: "destructive", onPress: async () => {
                     await GoalsService.deleteGoal(goalId);
+                    await loadActiveGoals();
                   }}
                 ]
               );
@@ -141,7 +144,7 @@ export default function GoalsScreeen() {
     <GestureHandlerRootView className="flex-1 bg-red-100">
       <FlatList
         data={goals}
-        keyExtractor={(item, index) => index.toString()}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => <GoalCard goal={item} />}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 30 }}
         showsVerticalScrollIndicator={false}

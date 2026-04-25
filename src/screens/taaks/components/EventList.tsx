@@ -13,11 +13,17 @@ export const EventsList: React.FC<Props> = ({ groupedEvents, onToggleEvent }) =>
     <EventRow key={event.id} event={event} onToggle={onToggleEvent} />
   );
 
+  const sections = groupedEvents.map((group) => ({
+    ...group,
+    section: 'event',
+  }));
+
   return (
     <GroupedList
-      sections={groupedEvents}
+      sections={sections}
       renderItem={renderItem}
       keyExtractor={(event) => event.id}
+      section='event'
     />
   );
 };

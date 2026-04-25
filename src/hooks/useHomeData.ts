@@ -20,7 +20,9 @@ export const useHomeData = () => {
 
   const scoreData = ScoreService.computeDayScore(tasks, habits);
   const tasksDue = tasks.filter(t => !t.completed).length;
+  const tasksCompleted = tasks.filter(t => t.completed).length;
   const habitsDone = habits.filter(h => h.completedToday).length;
+  const habitsTotal = habits.length;
 
   const isLoading = tasksLoading || habitsLoading || goalsLoading || userLoading;
   const error = tasksError || habitsError || goalsError || userError;
@@ -36,7 +38,9 @@ export const useHomeData = () => {
     score: scoreData.total,
     delta: scoreData.delta,
     tasksDue,
+    tasksCompleted,
     habitsDone,
+    habitsTotal,
     focusMinutes: scoreData.focusMinutes,
     toggleTask,
     toggleHabit,

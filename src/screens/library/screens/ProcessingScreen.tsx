@@ -29,7 +29,7 @@ export const ProcessingScreen: React.FC = () => {
   // Navigate away when done
   useEffect(() => {
     if (processingStep === 'done') {
-      router.replace('/books');
+      router.replace('/books/booksScreen');
     }
   }, [processingStep]);
 
